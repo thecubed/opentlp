@@ -55,8 +55,11 @@ export default defineConfig({
     }
   },
   optimizeDeps: {
+    // niimbluelib ships CommonJS only. Excluding it served the raw CJS file to
+    // the browser in dev, where its named exports (ConnectResult, ...) do not
+    // exist; pre-bundling converts it to ESM.
+    include: ['@mmote/niimbluelib'],
     exclude: [
-      '@mmote/niimbluelib',
       'universal-label-core',
       'universal-label-core/transport/web',
       'universal-label-core/transport/dummy',
