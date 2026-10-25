@@ -2,7 +2,8 @@
 //
 // IOBluetooth delivers channel callbacks on the run loop of the thread that
 // opened the channel, so everything here runs on the main thread, whose run
-// loop runBridge keeps spinning.
+// loop runBridge keeps spinning. Work is scheduled with onMainRunLoop, never
+// DispatchQueue.main: see there for why.
 import Foundation
 import IOBluetooth
 
@@ -99,7 +100,7 @@ final class IOBluetoothBackend: RfcommBackend {
                 "Could not open RFCOMM \(channel) on \(address) (IOReturn \(hexReturn(result))). " +
                 "Wake the printer and disconnect it in the Bluetooth menu if macOS is holding it.")))
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + retryDelay) { [weak self] in
+        onMainRunLoop(after: retryDelay) { [weak self] in
             self?.attempt(number + 1, device: device, address: address, channel: channel,
                           callbacks: callbacks, completion: completion)
         }
@@ -110,7 +111,7 @@ final class IOBluetoothBackend: RfcommBackend {
         guard live[address]?.isEmpty ?? true else { return }
         live.removeValue(forKey: address)
         // Drop the baseband link once nothing uses it, after the channel close lands.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+        onMainRunLoop(after: 0.3) { [weak self] in
             guard self?.live[address] == nil else { return }
             _ = device.closeConnection()
         }

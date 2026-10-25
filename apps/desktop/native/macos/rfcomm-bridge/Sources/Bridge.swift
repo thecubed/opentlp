@@ -185,21 +185,48 @@ final class Bridge {
     }
 }
 
+/// Run `block` on the main thread from a run-loop timer, never as a main-queue
+/// (GCD) block.
+///
+/// IOBluetooth's synchronous calls, such as openRFCOMMChannelSync and
+/// writeSync, spin the run loop while waiting for bluetoothd's reply, and the
+/// reply can arrive through the main dispatch queue. Inside a main-queue block
+/// that queue cannot be drained, so the call fails. A timer callout leaves it
+/// free, as at the top level of a script.
+func onMainRunLoop(after delay: TimeInterval = 0, _ block: @escaping () -> Void) {
+    let timer = Timer(timeInterval: max(0, delay), repeats: false) { _ in block() }
+    RunLoop.main.add(timer, forMode: .common)
+}
+
 /// Read stdin on a background thread and hand each line to the main thread.
 /// At end of input, close every channel and exit.
 func runBridge(_ bridge: Bridge, settle: TimeInterval = 0.5) -> Never {
+    let lines = LineQueue()
     let reader = Thread {
         while let line = readLine(strippingNewline: true) {
-            DispatchQueue.main.async { bridge.receive(line) }
+            lines.push(line)
+            onMainRunLoop { if let next = lines.pop() { bridge.receive(next) } }
         }
-        DispatchQueue.main.async {
+        onMainRunLoop {
+            while let pending = lines.pop() { bridge.receive(pending) }
             bridge.closeAll()
             // Let close callbacks and the baseband disconnect run before exiting.
-            DispatchQueue.main.asyncAfter(deadline: .now() + settle) { exit(0) }
+            onMainRunLoop(after: settle) { exit(0) }
         }
     }
     reader.start()
     while true {
         _ = RunLoop.main.run(mode: .default, before: .distantFuture)
+    }
+}
+
+/// Lines in arrival order; timers that fire together may run in any order.
+final class LineQueue {
+    private var items: [String] = []
+    private let lock = NSLock()
+    func push(_ line: String) { lock.lock(); items.append(line); lock.unlock() }
+    func pop() -> String? {
+        lock.lock(); defer { lock.unlock() }
+        return items.isEmpty ? nil : items.removeFirst()
     }
 }
