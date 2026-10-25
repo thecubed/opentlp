@@ -30,12 +30,20 @@ cd apps/desktop/native/macos/rfcomm-bridge
 printf '%s\n' '{"id":1,"op":"list"}' | build/rfcomm-bridge
 ```
 
-Status from a MobileLabeler (channel 2, `ESC A 0` is `G0EA` in base64):
+Status from a MobileLabeler. Open the print channel (3) first and then the
+command channel (2), the order DYMO's app uses and the desktop app follows;
+`ESC A 0` is `G0EA` in base64. Opens can take several seconds, so each step
+waits for the one before:
 
 ```sh
-{ echo '{"id":1,"op":"open","address":"F8:5A:00:01:0E:B7","channel":2}'
-  sleep 3; echo '{"id":2,"op":"write","handle":1,"data":"G0EA"}'; sleep 2; } | build/rfcomm-bridge
+{ echo '{"id":1,"op":"open","address":"F8:5A:00:01:0E:B7","channel":3}'; sleep 8
+  echo '{"id":2,"op":"open","address":"F8:5A:00:01:0E:B7","channel":2}'; sleep 8
+  echo '{"id":3,"op":"write","handle":2,"data":"G0EA"}'; sleep 3; } | build/rfcomm-bridge
 ```
+
+Handles count up from 1 per run, including failed opens. If `list` shows the
+printer as `"connected":true` before you start, something else holds the link;
+disconnect it in the Bluetooth menu first.
 
 The protocol is documented at the top of `Sources/Bridge.swift`. The bridge
 knows nothing about printers: drivers stay in TypeScript, in

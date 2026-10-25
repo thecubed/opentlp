@@ -26,7 +26,7 @@ final class IOBluetoothLink: NSObject, RfcommLink, IOBluetoothRFCOMMChannelDeleg
         while offset < bytes.count {
             var chunk = Array(bytes[offset..<min(offset + size, bytes.count)])
             let result = chunk.withUnsafeMutableBytes { channel.writeSync($0.baseAddress, length: UInt16($0.count)) }
-            if result != kIOReturnSuccess { return "Write failed at byte \(offset) (IOReturn \(result))" }
+            if result != kIOReturnSuccess { return "Write failed at byte \(offset) (IOReturn \(hexReturn(result)))" }
             offset += chunk.count
         }
         return nil
@@ -66,7 +66,9 @@ final class IOBluetoothBackend: RfcommBackend {
         let devices = (IOBluetoothDevice.pairedDevices() ?? []).compactMap { $0 as? IOBluetoothDevice }
         return devices.compactMap { device in
             guard let raw = device.addressString, let address = normaliseAddress(raw) else { return nil }
-            return PairedDevice(address: address, name: device.name, connected: device.isConnected())
+            // The MobileLabeler's name arrives with a trailing control byte ("DYMO ML 0EB7\u{02}").
+            let name = device.name.map { String($0.unicodeScalars.filter { !CharacterSet.controlCharacters.contains($0) }) }
+            return PairedDevice(address: address, name: name, connected: device.isConnected())
         }
     }
 
@@ -94,7 +96,7 @@ final class IOBluetoothBackend: RfcommBackend {
         guard number < attempts else {
             if live[address] == nil { _ = device.closeConnection() }
             return completion(.failure(BridgeFailure(
-                "Could not open RFCOMM \(channel) on \(address) (IOReturn \(result)). " +
+                "Could not open RFCOMM \(channel) on \(address) (IOReturn \(hexReturn(result))). " +
                 "Wake the printer and disconnect it in the Bluetooth menu if macOS is holding it.")))
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + retryDelay) { [weak self] in
@@ -113,4 +115,8 @@ final class IOBluetoothBackend: RfcommBackend {
             _ = device.closeConnection()
         }
     }
+}
+
+func hexReturn(_ result: IOReturn) -> String {
+    String(format: "0x%08x", UInt32(bitPattern: result))
 }
