@@ -20,6 +20,7 @@
     import { type DesignOrigin, type LabelDesign, mmToPx } from 'universal-label-renderer';
     import type { PrinterSession } from '../printer/session';
     import type { TransportOption } from '../printer/transports';
+    import { printableHeightPx } from '../printer/printable';
     import type { EditorStore } from '../stores/editor.svelte';
     import EditorCanvas from './EditorCanvas.svelte';
     import Toolbar from './Toolbar.svelte';
@@ -391,7 +392,9 @@
             // height so a 25 mm template isn't squished to a small printer's head
             // (which would also drift its mm-based placements when saved). Real
             // prints re-clamp to the printhead via resolveForPrinter.
-            targetHeightPx = editor.isTemplateMode ? tapePx : Math.min(printheadPx, tapePx);
+            targetHeightPx = editor.isTemplateMode
+                ? tapePx
+                : printableHeightPx(activeCapabilities, editor.design.paper!.tapeWidthMm, editor.design.paper!.labelWidthMm);
         } else if (editor.isTemplateMode) {
             return; // no paper while authoring — leave the designed height alone
         } else {
@@ -460,7 +463,9 @@
         const pxPerMm = activeCapabilities?.dpmm || 8;
         const tapeWidthMm = df.tapeWidthMm;
         const labelLengthMm = df.labelLengthMm ?? templates.labelLengthMm;
-        const heightPx = Math.min(activeCapabilities?.canvasHeightPx ?? Math.round(tapeWidthMm * pxPerMm), Math.round(tapeWidthMm * pxPerMm));
+        const heightPx = activeCapabilities
+            ? printableHeightPx(activeCapabilities, tapeWidthMm)
+            : Math.round(tapeWidthMm * pxPerMm);
         const widthPx = Math.max(8, Math.round(labelLengthMm * pxPerMm));
         const { design } = resolveTemplate(tpl, { widthPx, heightPx, tapeWidthMm, dpmm: pxPerMm, labelLengthMm, params, measureText: domMeasureText });
         return { ...design, paper };
@@ -790,9 +795,10 @@
         if (!editor.design.paper?.tapeWidthMm || !activeCapabilities?.canvasHeightPx) return 0;
         if (editor.design.paper.type !== 'continuous') return 0; // Only show for continuous tape
         
-        // ~8 px per mm at 8 dpmm. Use the same conversion logic to find total tape height in pixels.
+        // Tape beyond what can be printed: wider than the head, or outside a
+        // printer's own band for this tape (DYMO D1).
         const tapeWidthPx = Math.round(editor.design.paper.tapeWidthMm * (activeCapabilities.dpmm || 8));
-        const diff = tapeWidthPx - activeCapabilities.canvasHeightPx;
+        const diff = tapeWidthPx - printableHeightPx(activeCapabilities, editor.design.paper.tapeWidthMm);
         return diff > 0 ? diff / 2 : 0;
     });
 

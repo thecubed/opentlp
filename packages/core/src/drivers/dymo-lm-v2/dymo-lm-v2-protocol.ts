@@ -282,8 +282,8 @@ export const DYMO_MOBILELABELER_PROFILE: PrinterModelProfile = {
         'Prints over its serial port (RFCOMM 3); there, choose a paper with the loaded tape width.',
         'Status and cassette detection use a second, unadvertised channel (RFCOMM 2) that browsers and serial ports cannot open;',
         'the desktop app’s native Bluetooth option on macOS opens both and reads them.',
-        'Printable band per tape: 6 mm ≈ 5.1 mm, 9 mm ≈ 6.8 mm, 12 mm ≈ 8.0 mm, 19 mm ≈ 13.4 mm, 24 mm ≈ 19.0 mm;',
-        'a custom paper with that label width keeps the canvas inside the band, and anything outside it is clipped.',
+        'Printable band per tape: 6 mm ≈ 5.1 mm, 9 mm ≈ 6.8 mm, 12 mm ≈ 8.0 mm, 19 mm ≈ 13.4 mm, 24 mm ≈ 19.0 mm,',
+        'centred on the tape; the canvas is sized to the band and the rest of the tape stays blank.',
     ].join(' '),
     capabilities: {
         maxDensity: 1,
@@ -294,6 +294,8 @@ export const DYMO_MOBILELABELER_PROFILE: PrinterModelProfile = {
         driverName: 'DYMO LabelManager V2',
         physical: {
             supportedMediaWidthsMm: { min: 6, max: 24 },
+            // The printer positions the band by cassette; DYMO never prints outside it.
+            printableBandsMm: D1_TAPES.map(t => ({ mediaWidthMm: t.widthMm, printableWidthMm: t.printableDots / DYMO_LM_V2_DPMM })),
         },
     },
 };

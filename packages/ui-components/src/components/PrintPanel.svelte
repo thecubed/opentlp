@@ -4,6 +4,7 @@
      * printer's capabilities; the button is disabled while printing and
      * re-enables on the session's idle transition.
      */
+    import { printableHeightPx as bandHeightPx } from '../printer/printable';
     import { fromStore } from 'svelte/store';
     import { DEFAULT_PAPER_PROFILES, type UniversalPrintOptions, type PaperProfile } from 'universal-label-core';
     import type { PrinterSession } from '../printer/session';
@@ -80,7 +81,7 @@
     const feedPlan = $derived(resolveContinuousFeed(caps, editor.printFeedMode, editor.printFeedBeforeMm, editor.printFeedAfterMm));
 
     const printableHeightPx = $derived(caps
-        ? Math.min(caps.canvasHeightPx, Math.round(activePaper.tapeWidthMm * caps.dpmm))
+        ? bandHeightPx(caps, activePaper.tapeWidthMm)
         : editor.design.heightPx
     );
     const designHeightMm = $derived(editor.design.heightPx / editor.pxPerMm);

@@ -168,6 +168,14 @@ export interface PrinterCapabilities {
         headToCutterPx?: number;
         /** Supported physical paper/media widths in millimeters. Can be a single width or a min/max range. */
         supportedMediaWidthsMm?: number | { min: number; max: number };
+        /**
+         * How much of each media width can carry ink, for printers that place a
+         * narrower printable band on the media by its width rather than using
+         * the whole head (DYMO D1 cassettes: 13.4 mm of 19 mm tape). The band is
+         * centred on the media. Widths not listed print across the media, up to
+         * the head.
+         */
+        printableBandsMm?: ReadonlyArray<{ mediaWidthMm: number; printableWidthMm: number }>;
         /** Indicates if the printer requires special paper with an RFID/NFC chip */
     };
     /** 
