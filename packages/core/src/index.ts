@@ -93,6 +93,11 @@ export type NelkoP21Driver = _NelkoP21Driver;
 export const NelkoP21Driver = _NelkoP21Driver;
 export { NELKO_P21_MODELS };
 
+import { DymoLmV2Driver as _DymoLmV2Driver, DYMO_LM_V2_MODELS } from "./drivers/dymo-lm-v2";
+export type DymoLmV2Driver = _DymoLmV2Driver;
+export const DymoLmV2Driver = _DymoLmV2Driver;
+export { DYMO_LM_V2_MODELS };
+
 import { NiimbotDriver as _NiimbotDriver } from "./drivers/niimbot";
 export type NiimbotDriver = _NiimbotDriver;
 export const NiimbotDriver = _NiimbotDriver;
