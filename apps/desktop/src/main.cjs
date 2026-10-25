@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, session, shell } = require('electron');
 const path = require('node:path');
 const { fileURLToPath } = require('node:url');
+const { RfcommBridgeProcess, registerRfcommBridge, helperPath } = require('./rfcomm-bridge.cjs');
 
 app.commandLine.appendSwitch('enable-features', 'WebSerialBypassBlocklist');
 
@@ -8,6 +9,7 @@ let mainWindow;
 let bluetoothChoice;
 let usbChoice;
 let serialChoice;
+let rfcommBridge;
 
 const rendererDirectory = path.resolve(__dirname, '../dist');
 
@@ -110,6 +112,25 @@ function registerChoiceHandlers() {
     });
 }
 
+function isAppSender(event) {
+    return Boolean(mainWindow)
+        && event.sender === mainWindow.webContents
+        && isTrustedLocation(event.senderFrame?.url ?? event.sender.getURL());
+}
+
+/** Native RFCOMM for printers that need more than one channel; started on first use only. */
+function setUpRfcommBridge() {
+    rfcommBridge = new RfcommBridgeProcess({
+        executable: helperPath({ packaged: app.isPackaged, resourcesPath: process.resourcesPath })
+    });
+    registerRfcommBridge({
+        ipcMain,
+        bridge: rfcommBridge,
+        isAllowed: isAppSender,
+        getContents: () => mainWindow?.webContents
+    });
+}
+
 async function createWindow() {
     mainWindow = new BrowserWindow({
         width: 1180,
@@ -134,7 +155,12 @@ async function createWindow() {
     mainWindow.webContents.on('will-navigate', (event, url) => {
         if (!isTrustedLocation(url)) event.preventDefault();
     });
+    // A reload starts the renderer over; channels it held would stay open.
+    mainWindow.webContents.on('did-start-navigation', details => {
+        if (details.isMainFrame && !details.isSameDocument) rfcommBridge?.stop();
+    });
     mainWindow.on('closed', () => {
+        rfcommBridge?.stop();
         cancelPendingChoices();
         mainWindow = undefined;
     });
@@ -154,9 +180,12 @@ else {
     });
     app.whenReady().then(async () => {
         registerChoiceHandlers();
+        setUpRfcommBridge();
         await createWindow();
     });
 }
+
+app.on('will-quit', () => rfcommBridge?.stop());
 
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();

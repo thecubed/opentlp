@@ -198,6 +198,14 @@ describe('connection-guide', () => {
             const autoMarklifeSerial = getTransportGuidance('web-serial', windowsPlatform, 'auto:marklife');
             expect(autoMarklifeSerial.badge).not.toBe('Unsupported by printer');
         });
+
+        it('recommends the native DYMO option only for the MobileLabeler', () => {
+            const mac: PlatformInfo = { ...linuxPlatform, os: 'macos', osName: 'macOS' };
+            expect(getTransportGuidance('dymo-native', mac, 'dymo_mobilelabeler').tier).toBe('recommended');
+            const other = getTransportGuidance('dymo-native', mac, 'marklife_p12');
+            expect(other.tier).toBe('discouraged');
+            expect(other.discouragedReason).toMatch(/MobileLabeler/);
+        });
     });
 });
 

@@ -10,10 +10,13 @@
     import { WebUsbTransport } from 'universal-label-core/transport/usb';
     import { WebSerialTransport } from 'universal-label-core/transport/web-serial';
     import DevicePicker from './DevicePicker.svelte';
+    import { dymoNativeOption, dymoNativeUnavailableReason } from './native-rfcomm';
 
     const editor = new EditorStore();
     const session = new PrinterSession();
-    const transports: TransportOption[] = [
+    const dymoNative = dymoNativeOption();
+    const transports: TransportOption[] = $state([
+        ...(dymoNative ? [dymoNative] : []),
         {
             id: 'bluetooth', label: 'Bluetooth',
             description: 'BLE label printers', available: true,
@@ -35,7 +38,16 @@
             available: true, isDummy: true,
             create: () => new DummyTransport()
         }
-    ];
+    ]);
+    if (dymoNative) {
+        void dymoNativeUnavailableReason().then(reason => {
+            const option = transports.find(t => t.id === dymoNative.id);
+            if (option && reason) {
+                option.available = false;
+                option.unavailableReason = reason;
+            }
+        });
+    }
 </script>
 
 {#snippet hardwareTab()}

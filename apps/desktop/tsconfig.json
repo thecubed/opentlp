@@ -15,6 +15,7 @@
       "universal-label-core/transport/web": ["../../packages/core/src/core/transports/bluetooth-transport.ts"],
       "universal-label-core/transport/usb": ["../../packages/core/src/core/transports/web-usb-transport.ts"],
       "universal-label-core/transport/web-serial": ["../../packages/core/src/core/transports/web-serial-transport.ts"],
+      "universal-label-core/transport/rfcomm-bridge": ["../../packages/core/src/core/transports/rfcomm-bridge-transport.ts"],
       "universal-label-renderer": ["../../packages/renderer/src/index.ts"],
       "universal-label-ui": ["../../packages/ui-components/src/index.ts"]
     }

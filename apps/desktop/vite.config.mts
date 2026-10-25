@@ -24,6 +24,7 @@ export default defineConfig({
             'universal-label-core/transport/web': pkg('core/src/core/transports/bluetooth-transport.ts'),
             'universal-label-core/transport/usb': pkg('core/src/core/transports/web-usb-transport.ts'),
             'universal-label-core/transport/web-serial': pkg('core/src/core/transports/web-serial-transport.ts'),
+            'universal-label-core/transport/rfcomm-bridge': pkg('core/src/core/transports/rfcomm-bridge-transport.ts'),
             'universal-label-core': pkg('core/src/index.ts'),
             'universal-label-renderer': pkg('renderer/src/index.ts'),
             'universal-label-ui': pkg('ui-components/src/index.ts')

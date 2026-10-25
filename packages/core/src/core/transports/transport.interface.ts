@@ -71,4 +71,16 @@ export interface IDeviceTransport extends EventEmitter<TransportEventMap> {
      * Retrieves all characteristics for a given service.
      */
     getCharacteristics?(serviceUUID: string): Promise<{ uuid: string, properties: any }[]>;
+
+    /**
+     * Opens another RFCOMM channel, by number, on the same Bluetooth Classic
+     * device, returned as its own connected transport.
+     *
+     * Only transports with native Bluetooth access can do this; Web Serial and
+     * OS serial ports reach a single advertised channel. Drivers whose printer
+     * splits jobs and commands over separate channels use it when present and
+     * fall back to what the main channel allows when not. The caller owns the
+     * returned transport and disconnects it.
+     */
+    openRfcommChannel?(channel: number): Promise<IDeviceTransport>;
 }

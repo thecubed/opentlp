@@ -279,8 +279,9 @@ export const DYMO_MOBILELABELER_PROFILE: PrinterModelProfile = {
     supportLevel: UNTESTED,
     notes: [
         '300-dpi D1 tape labeler (6, 9, 12, 19 and 24 mm cassettes) over Bluetooth Classic.',
-        'Prints over its serial port (RFCOMM 3); choose a paper with the loaded tape width.',
-        'Status and cassette detection use a second, unadvertised channel that browsers cannot open, so they are not read here.',
+        'Prints over its serial port (RFCOMM 3); there, choose a paper with the loaded tape width.',
+        'Status and cassette detection use a second, unadvertised channel (RFCOMM 2) that browsers and serial ports cannot open;',
+        'the desktop app’s native Bluetooth option on macOS opens both and reads them.',
         'Printable band per tape: 6 mm ≈ 5.1 mm, 9 mm ≈ 6.8 mm, 12 mm ≈ 8.0 mm, 19 mm ≈ 13.4 mm, 24 mm ≈ 19.0 mm;',
         'a custom paper with that label width keeps the canvas inside the band, and anything outside it is clipped.',
     ].join(' '),

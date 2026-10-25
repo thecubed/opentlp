@@ -5,6 +5,7 @@ export type { PrinterDriverChoice, DiagnosticLogger, DeviceDiagnostic, Candidate
 
 // Interfaces (transport + driver contracts — always safe to import)
 export * from "./core/transports/transport.interface";
+export type { RfcommBridge, RfcommBridgeDevice, RfcommBridgeTransportOptions } from "./core/transports/rfcomm-bridge-transport";
 export * from "./drivers/driver.interface";
 // Printer artwork: the picture of each model and what its parts can do.
 export * from "./drivers/printer-artwork";
@@ -116,6 +117,7 @@ export const DummyDriver = _DummyDriver;
 //   import { CapacitorClassicTransport } from "universal-label-core/transport/capacitor-classic"
 //   import { WebUsbTransport }        from "universal-label-core/transport/usb"
 //   import { WebSerialTransport }     from "universal-label-core/transport/web-serial"
+//   import { RfcommBridgeTransport }  from "universal-label-core/transport/rfcomm-bridge"
 //   import { NodeUsbTransport }       from "universal-label-core/transport/node-usb"
 //   import { NodeSerialTransport }    from "universal-label-core/transport/node-serial"
 //   import { DummyTransport }         from "universal-label-core/transport/dummy"

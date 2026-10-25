@@ -88,7 +88,10 @@ implementations:
   - project: blewebler2
     module: packages/core/src/drivers/dymo-lm-v2
     url: https://github.com/opentlp/opentlp/tree/main/packages/core/src/drivers/dymo-lm-v2
-    note: Print-only driver for the job channel, written from the wire-format facts on this page.
+    note: >-
+      Written from the wire-format facts on this page. Prints on the job
+      channel alone, and adds status and the pre-job lock when the transport
+      can also open the command channel.
 status: reported
 sources:
   - kind: user-report

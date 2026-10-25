@@ -57,6 +57,11 @@
       "import": "./lib/core/transports/web-serial-transport.js",
       "require": "./lib/core/transports/web-serial-transport.js"
     },
+    "./transport/rfcomm-bridge": {
+      "types": "./lib/core/transports/rfcomm-bridge-transport.d.ts",
+      "import": "./lib/core/transports/rfcomm-bridge-transport.js",
+      "require": "./lib/core/transports/rfcomm-bridge-transport.js"
+    },
     "./transport/node-serial": {
       "types": "./lib/core/transports/node-serial-transport.d.ts",
       "import": "./lib/core/transports/node-serial-transport.js",

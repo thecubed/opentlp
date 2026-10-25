@@ -15,5 +15,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     cancelUsbDevice: () => ipcRenderer.send('cancel-usb-device'),
     onSerialDeviceList: callback => subscription('serial-device-list', callback),
     chooseSerialDevice: portId => ipcRenderer.send('choose-serial-device', portId),
-    cancelSerialDevice: () => ipcRenderer.send('cancel-serial-device')
+    cancelSerialDevice: () => ipcRenderer.send('cancel-serial-device'),
+    rfcomm: {
+        status: () => ipcRenderer.invoke('rfcomm:status'),
+        listDevices: () => ipcRenderer.invoke('rfcomm:list'),
+        open: (address, channel) => ipcRenderer.invoke('rfcomm:open', address, channel),
+        write: (handle, data) => ipcRenderer.invoke('rfcomm:write', handle, data),
+        close: handle => ipcRenderer.invoke('rfcomm:close', handle),
+        onData: callback => subscription('rfcomm:data', callback),
+        onClosed: callback => subscription('rfcomm:closed', callback)
+    }
 });

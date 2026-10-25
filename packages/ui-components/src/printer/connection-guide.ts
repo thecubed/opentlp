@@ -188,6 +188,14 @@ export function resolvePrinterProfile(printerModel?: PrinterModelProfile | strin
 /**
  * Determine the guidance tier, instructions, and warnings for a transport option.
  */
+/**
+ * Models a native RFCOMM option is written for. Such an option opens channels
+ * by number, so it suits only printers whose channels it knows.
+ */
+const NATIVE_RFCOMM_MODELS: Record<string, readonly string[]> = {
+    'dymo-native': ['dymo_mobilelabeler'],
+};
+
 export function getTransportGuidance(
     transportId: string,
     platform: PlatformInfo,
@@ -203,6 +211,23 @@ export function getTransportGuidance(
     const profile = resolvePrinterProfile(printerModel);
     const hints = profile?.connectionHints;
     const supported = profile?.supportedTransports;
+
+    // 0. NATIVE RFCOMM (desktop helper for one printer family)
+    const nativeModels = NATIVE_RFCOMM_MODELS[id];
+    if (nativeModels) {
+        if (profile && !nativeModels.includes(profile.id)) {
+            return {
+                tier: 'discouraged',
+                badge: 'Other printer',
+                discouragedReason: `This option is only for the ${nativeModels.map(m => resolvePrinterProfile(m)?.model ?? m).join(', ')}.`
+            };
+        }
+        return {
+            tier: profile ? 'recommended' : 'alternative',
+            badge: profile ? 'Recommended' : 'Native Bluetooth',
+            hints: 'Prints and also reads battery, cassette and faults, which a serial port cannot.'
+        };
+    }
 
     // 1. DUMMY / SIMULATOR
     if (isDummy) {

@@ -23,9 +23,10 @@ support:
     level: listed
     driver: dymo-lm-v2
     notes: >-
-      Print-only over the printer's serial port (RFCOMM 3), which is what Web
-      Serial can reach. The tape width comes from the selected paper; status
-      and cassette detection need RFCOMM 2 and are not read.
+      Over the printer's serial port (RFCOMM 3), which is what Web Serial can
+      reach, printing only: the tape width comes from the selected paper. The
+      desktop app's native Bluetooth option on macOS also opens RFCOMM 2, reads
+      battery, cassette and faults, and claims the printer before each job.
 status: reported
 sources:
   - id: owner-hardware-test
@@ -86,7 +87,9 @@ page.
 
 DYMO's Android app opens channels 2 and 3 by number and keeps both open. A
 browser's Web Serial, and an operating system serial port, can only reach the
-advertised serial port, so they can print but cannot read status. The printer
+advertised serial port, so they can print but cannot read status. Reading it
+takes native Bluetooth access, such as a helper process that opens RFCOMM
+channels by number. The printer
 also offers an HCRP print service, which macOS uses when it is set up as a
 Bluetooth printer.
 
