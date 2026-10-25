@@ -1,28 +1,31 @@
 <script lang="ts">
     /**
-     * Manage a template's parameters (author mode). Each parameter becomes a
-     * field the template's user fills in; bind an element's text/data to one via
-     * the Responsive panel.
+     * The design's fields. Each is something filled in per print (or per batch
+     * row); content refers to one as {name}, inserted from the content box.
      */
     import type { EditorStore } from '../stores/editor.svelte';
     import type { ParamType } from 'universal-label-renderer';
     import Icon from './Icon.svelte';
 
-    interface Props { editor: EditorStore; }
-    let { editor }: Props = $props();
+    interface Props {
+        editor: EditorStore;
+        /** Inside a dock panel that already shows the title. */
+        embedded?: boolean;
+    }
+    let { editor, embedded = false }: Props = $props();
 
-    const meta = $derived(editor.templateMeta);
+    const params = $derived(editor.template.params);
     const TYPES: ParamType[] = ['text', 'number', 'boolean', 'select', 'color', 'date'];
 
     function add(): void {
-        const n = (meta?.params.length ?? 0) + 1;
-        editor.addParam({ name: `param${n}`, label: `Parameter ${n}`, type: 'text', default: '' });
+        const n = params.length + 1;
+        editor.addField(`Field ${n}`, '');
     }
 
     function rename(oldName: string, next: string): void {
         const name = next.trim();
         if (!/^[A-Za-z_$][\w$]*$/.test(name)) return; // keep a valid identifier
-        if (meta?.params.some(p => p.name === name && p.name !== oldName)) return;
+        if (params.some(p => p.name === name && p.name !== oldName)) return;
         editor.updateParam(oldName, { name });
     }
 
@@ -34,16 +37,16 @@
 
 <div class="params">
     <div class="head">
-        <h2>Parameters</h2>
+        {#if !embedded}<h2>Fields</h2>{/if}
         <span class="spacer"></span>
         <button class="add" onclick={add}><Icon name="plus" size={14} /> Add</button>
     </div>
 
-    {#if !meta || meta.params.length === 0}
-        <p class="empty">No parameters yet. Add one, then bind an element's text to it in the Responsive panel.</p>
+    {#if params.length === 0}
+        <p class="empty">No fields yet. Select a text and use <em>ƒx Insert field</em>, or select part of it and choose <em>Make field from selection</em>.</p>
     {:else}
         <div class="list">
-            {#each meta.params as p (p.name)}
+            {#each params as p (p.name)}
                 <div class="param">
                     <div class="prow">
                         <input class="pname" type="text" value={p.name} title="Identifier used in expressions"

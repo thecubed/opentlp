@@ -7,6 +7,7 @@
      * here converts back to pixels and moves the element, so the canvas always
      * shows exactly what the designed size will print.
      */
+    import type { Snippet } from 'svelte';
     import type { EditorStore } from '../stores/editor.svelte';
     import { PX_PER_MM, sizeFieldsFor } from 'universal-label-renderer';
     import { anchorFx, anchorFy, anchorParts } from 'universal-label-renderer';
@@ -23,8 +24,10 @@
          * the properties panel so each sits with the thing it affects.
          */
         section: 'position' | 'size' | 'limits';
+        /** Extra controls on the Size row (e.g. the exact-font toggle). */
+        sizeExtra?: Snippet;
     }
-    let { editor, section }: Props = $props();
+    let { editor, section, sizeExtra }: Props = $props();
 
     const el = $derived(editor.selected);
     const a = $derived(editor.selectedAuthoring);
@@ -169,6 +172,7 @@
                     <option value="max">of max</option>
                 </select>
             {/if}
+            {#if field === 'size' && sizeExtra}{@render sizeExtra()}{/if}
         </div>
     </div>
 {/snippet}

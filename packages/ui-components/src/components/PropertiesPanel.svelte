@@ -143,6 +143,13 @@
     /** Which edge/centre the element is anchored to, per axis (drives the Align toggles). */
 </script>
 
+{#snippet exactToggle()}
+    <label class="check exact" title={resolved ? `Renders as ${resolved.meta.label} ×${resolved.scale} = ${resolved.renderedH}px` : 'Use one specific pixel font size'}>
+        <input type="checkbox" checked={exactFont} onchange={e => setExactFont(e.currentTarget.checked)} />
+        Exact font
+    </label>
+{/snippet}
+
 {#snippet content(id: string, multiline: boolean, rows: number)}
     <FieldTextArea
         value={editor.contentSource(id)}
@@ -300,7 +307,6 @@
 
         {#if el.type === 'text'}
             {@const a = editor.selectedAuthoring}
-            {@const boxMode = el.width === undefined && el.height === undefined ? 'fit' : el.height === undefined ? 'width' : 'box'}
             <div class="group">
                 <span class="group-title">Content</span>
                 {@render content(el.id, true, 2)}
@@ -349,19 +355,7 @@
                         <span class="note">Add all fonts installed on this device.</span>
                     </div>
                 {/if}
-                <ResponsivePanel {editor} section="size" />
-                {#if el.font === 'bitmap'}
-                    <div class="row">
-                        <span class="lbl"></span>
-                        <label class="check">
-                            <input type="checkbox" checked={exactFont} onchange={e => setExactFont(e.currentTarget.checked)} />
-                            Pick exact font
-                        </label>
-                        {#if !exactFont && resolved}
-                            <span class="note">→ {resolved.meta.label} ×{resolved.scale} = {resolved.renderedH}px</span>
-                        {/if}
-                    </div>
-                {/if}
+                <ResponsivePanel {editor} section="size" sizeExtra={el.font === 'bitmap' ? exactToggle : undefined} />
                 <div class="row tool-row">
                     <div class="seg-group" role="group" aria-label="Style">
                         <button class="style-btn" class:on={el.bold} title="Bold" aria-label="Bold" aria-pressed={el.bold} onclick={() => commit({ bold: !el.bold })}><Icon name="bold" size={16} /></button>
@@ -373,68 +367,76 @@
                             <button class="style-btn" class:on={el.align === value} title="Align {value}" aria-label="Align {value}" aria-pressed={el.align === value} onclick={() => commit({ align: value })}><Icon name={icon} size={16} /></button>
                         {/each}
                     </div>
-                    <button class="style-btn knock" class:on={!!el.invert} title="Knockout: white text on a solid block" aria-label="Knockout" aria-pressed={!!el.invert} onclick={() => commit({ invert: el.invert ? undefined : true })}><Icon name="invert" size={16} /> Knockout</button>
-                    {#if el.invert}
-                        <label class="check" title="Padding around the text inside the block">
-                            Pad
-                            <input
-                                class="pad"
-                                type="number" min="0" max="40" value={el.invertPad ?? 4}
-                                onfocus={() => editor.beginTransform()}
-                                oninput={e => live({ invertPad: Math.max(0, Number(e.currentTarget.value)) })}
-                                onblur={() => editor.endTransform()}
-                            />
-                        </label>
-                    {/if}
+                </div>
+                <!-- Knockout and its padding share a row that never changes height. -->
+                <div class="row tool-row">
+                    <button class="style-btn knock" class:on={!!el.invert} title="White text on a solid block" aria-pressed={!!el.invert} onclick={() => commit({ invert: el.invert ? undefined : true })}><Icon name="invert" size={16} /> Knockout</button>
+                    <label class="check" class:off={!el.invert} title="Space between the text and the edge of the block">
+                        Padding
+                        <input
+                            class="pad"
+                            type="number" min="0" max="40" value={el.invertPad ?? 4}
+                            disabled={!el.invert}
+                            onfocus={() => editor.beginTransform()}
+                            oninput={e => live({ invertPad: Math.max(0, Number(e.currentTarget.value)) })}
+                            onblur={() => editor.endTransform()}
+                        />
+                        px
+                    </label>
                 </div>
             </div>
 
-            <!-- The text frame: hug the glyphs, or a fixed width / box the text sits in. -->
+            <!-- The text frame, per side: follow the text, or a fixed size the text sits in. -->
             <div class="group">
                 <span class="group-title">Text box</span>
-                <div class="seg-group wide" role="radiogroup" aria-label="Text box size">
-                    <button class="seg" class:on={boxMode === 'fit'} role="radio" aria-checked={boxMode === 'fit'}
-                        title="The box hugs the text"
-                        onclick={() => commit({ width: undefined, height: undefined, wrap: undefined })}>Fit text</button>
-                    <button class="seg" class:on={boxMode === 'width'} role="radio" aria-checked={boxMode === 'width'}
-                        title="A fixed width; the height follows the text"
-                        onclick={() => commit({ width: el.width ?? Math.round(textInk.width), height: undefined })}>Fixed width</button>
-                    <button class="seg" class:on={boxMode === 'box'} role="radio" aria-checked={boxMode === 'box'}
-                        title="A fixed width and height; the text sits inside"
-                        onclick={() => commit({ width: el.width ?? Math.round(textInk.width), height: el.height ?? Math.round(textInk.height) })}>Fixed box</button>
-                </div>
-                {#if boxMode !== 'fit'}
-                    <div class="row">
-                        <label class="check">W
-                            <input
-                                class="num" type="number" min="8" max={editor.design.widthPx}
-                                value={el.width ?? Math.round(textInk.width)}
-                                onfocus={() => editor.beginTransform()}
-                                oninput={e => live({ width: Math.max(8, Number(e.currentTarget.value)) })}
-                                onblur={() => editor.endTransform()}
-                            />
-                        </label>
-                        {#if boxMode === 'box'}
-                            <label class="check">H
-                                <input
-                                    class="num" type="number" min="8" max={editor.design.heightPx}
-                                    value={el.height ?? Math.round(textInk.height)}
-                                    onfocus={() => editor.beginTransform()}
-                                    oninput={e => live({ height: Math.max(8, Number(e.currentTarget.value)) })}
-                                    onblur={() => editor.endTransform()}
-                                />
-                            </label>
-                            <div class="seg-group" role="group" aria-label="Vertical position">
-                                {#each [['top', 'align-top'], ['middle', 'align-center-v'], ['bottom', 'align-bottom']] as const as [value, icon] (value)}
-                                    <button class="style-btn" class:on={(el.valign ?? 'top') === value} title="Text at the {value}" aria-label="Text at the {value}" aria-pressed={(el.valign ?? 'top') === value} onclick={() => commit({ valign: value })}><Icon name={icon} size={16} /></button>
-                                {/each}
-                            </div>
-                        {/if}
-                        <span class="note">px</span>
+                <div class="row frame-row">
+                    <span class="lbl">Width</span>
+                    <div class="seg-group" role="radiogroup" aria-label="Width">
+                        <button class="seg" class:on={el.width === undefined} role="radio" aria-checked={el.width === undefined}
+                            title="Grows and shrinks with the text"
+                            onclick={() => editor.setTextFrame(el.id, { w: null })}>Fit text</button>
+                        <button class="seg" class:on={el.width !== undefined} role="radio" aria-checked={el.width !== undefined}
+                            title="Stays this wide; long lines can wrap"
+                            onclick={() => { if (el.width === undefined) editor.setTextFrame(el.id, { w: textInk.width }); }}>Fixed</button>
                     </div>
-                {/if}
+                    {#if el.width !== undefined}
+                        <input
+                            class="num" type="number" min="8" max={editor.design.widthPx} aria-label="Width in px"
+                            value={el.width}
+                            onfocus={() => editor.beginTransform()}
+                            oninput={e => live({ width: Math.max(8, Number(e.currentTarget.value)) })}
+                            onblur={() => editor.endTransform()}
+                        />
+                        <span class="note">px</span>
+                    {/if}
+                </div>
+                <div class="row frame-row">
+                    <span class="lbl">Height</span>
+                    <div class="seg-group" role="radiogroup" aria-label="Height">
+                        <button class="seg" class:on={el.height === undefined} role="radio" aria-checked={el.height === undefined}
+                            title="Grows with the number of lines"
+                            onclick={() => editor.setTextFrame(el.id, { h: null })}>Fit text</button>
+                        <button class="seg" class:on={el.height !== undefined} role="radio" aria-checked={el.height !== undefined}
+                            title="Stays this tall; the text sits inside"
+                            onclick={() => { if (el.height === undefined) editor.setTextFrame(el.id, { h: textInk.height }); }}>Fixed</button>
+                    </div>
+                    {#if el.height !== undefined}
+                        <input
+                            class="num" type="number" min="8" max={editor.design.heightPx} aria-label="Height in px"
+                            value={el.height}
+                            onfocus={() => editor.beginTransform()}
+                            oninput={e => live({ height: Math.max(8, Number(e.currentTarget.value)) })}
+                            onblur={() => editor.endTransform()}
+                        />
+                        <div class="seg-group" role="group" aria-label="Vertical position">
+                            {#each [['top', 'align-top'], ['middle', 'align-center-v'], ['bottom', 'align-bottom']] as const as [value, icon] (value)}
+                                <button class="style-btn" class:on={(el.valign ?? 'top') === value} title="Text at the {value}" aria-label="Text at the {value}" aria-pressed={(el.valign ?? 'top') === value} onclick={() => commit({ valign: value })}><Icon name={icon} size={16} /></button>
+                            {/each}
+                        </div>
+                    {/if}
+                </div>
                 <div class="row">
-                    {#if boxMode !== 'fit'}
+                    {#if el.width !== undefined}
                         <label class="check" title="Break long lines at the box width">
                             <input type="checkbox" checked={el.wrap === true} onchange={e => commit({ wrap: e.currentTarget.checked || undefined })} />
                             Wrap long lines
@@ -443,13 +445,10 @@
                     {#if a}
                         <label class="check" title="Make the text smaller until it fits">
                             <input type="checkbox" checked={a.autofit ?? false} onchange={e => editor.setAutofit(el.id, e.currentTarget.checked)} />
-                            Shrink to fit {boxMode === 'fit' ? 'the label' : 'the box'}
+                            Shrink to fit {el.width === undefined && el.height === undefined ? 'the label' : 'the box'}
                         </label>
                     {/if}
                 </div>
-                {#if boxMode === 'fit' && !el.wrap}
-                    <span class="note">Runs on one line; Enter starts a new one.</span>
-                {/if}
             </div>
         {:else if el.type === 'barcode'}
             <div class="group">
@@ -619,11 +618,11 @@
                 hidden
                 onchange={e => importSvg(e.currentTarget.files)}
             />
-            <div class="row">
-                <span class="note" class:bad={svgError !== null}>
-                    {svgError ?? 'Any SVG works — it is reduced to plain outlines on import, so nothing executable comes with it.'}
-                </span>
-            </div>
+            {#if svgError}
+                <div class="row">
+                    <span class="note bad">{svgError}</span>
+                </div>
+            {/if}
         {:else if el.type === 'image'}
             <ResponsivePanel {editor} section="size" />
             <div class="row">
@@ -826,13 +825,15 @@
     }
     .seg-group > button + button { border-left: 1px solid var(--border); }
     .seg-group > button:hover { transform: none; }
-    .seg-group.wide { display: flex; }
-    .seg-group.wide > .seg { flex: 1; padding: 6px 8px; font-size: 13px; }
+    .seg-group > .seg { padding: 6px 10px; font-size: 13px; }
+    .frame-row .lbl { min-width: 52px; }
     .seg-group > .seg.on {
         background: var(--accent);
         color: var(--accent-fg, #fff);
     }
     .knock { border: 1px solid var(--border); display: inline-flex; align-items: center; gap: 6px; }
+    .check.off { color: var(--muted); }
+    .exact { margin-left: 4px; font-size: 13px; white-space: nowrap; }
     .num { width: 72px; }
     .style-btn {
         min-width: 38px;

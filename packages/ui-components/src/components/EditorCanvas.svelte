@@ -19,6 +19,12 @@
         editor: EditorStore;
         unprintableLeadingPx?: number;
         unprintableTopBottomPx?: number;
+        /**
+         * Height at the bottom of the canvas hidden behind an overlay (the
+         * phone inspector). The label is centred in, and the selection kept
+         * within, the part above it.
+         */
+        bottomInset?: number;
         /** View-only: elements can't be selected, moved, resized or rotated. */
         readonly?: boolean;
         /**
@@ -27,12 +33,14 @@
          */
         onstagetap?: (point: { x: number; y: number }) => void;
     }
-    let { editor, unprintableLeadingPx = 0, unprintableTopBottomPx = 0, readonly = false, onstagetap }: Props = $props();
+    let { editor, unprintableLeadingPx = 0, unprintableTopBottomPx = 0, bottomInset = 0, readonly = false, onstagetap }: Props = $props();
 
     const design = $derived(editor.design);
 
     let containerWidth = $state(0);
     let containerHeight = $state(0);
+    /** The part of the canvas not covered by an overlay at the bottom. */
+    const visibleHeight = $derived(Math.max(48, containerHeight - bottomInset));
     
     let panX = $state(0);
     let panY = $state(0);
@@ -136,11 +144,11 @@
             nextX = Math.max(minX, Math.min(maxX, nextX));
         }
 
-        if (ch <= containerHeight) {
+        if (ch <= visibleHeight) {
             // Center the physical tape, which centers the printable area too since top/bottom margins are equal
-            nextY = ((containerHeight - ch) / 2) + (unprintableTopBottomPx * zoom);
+            nextY = ((visibleHeight - ch) / 2) + (unprintableTopBottomPx * zoom);
         } else {
-            const minY = containerHeight - ch - 16 + (unprintableTopBottomPx * zoom);
+            const minY = visibleHeight - ch - 16 + (unprintableTopBottomPx * zoom);
             const maxY = 16 + (unprintableTopBottomPx * zoom);
             nextY = Math.max(minY, Math.min(maxY, nextY));
         }
@@ -155,13 +163,39 @@
             const totalW = design.widthPx + unprintableW;
             const totalH = design.heightPx + (unprintableTopBottomPx * 2);
             const zoomX = (containerWidth - 32) / totalW;
-            const zoomY = containerHeight > 32 ? (containerHeight - 32) / totalH : zoomX;
+            const zoomY = visibleHeight > 32 ? (visibleHeight - 32) / totalH : zoomX;
             editor.zoom = Math.max(0.25, Math.floor(Math.min(zoomX, zoomY) * 4) / 4);
             const constrained = constrainPan(panX, panY);
             panX = constrained.x;
             panY = constrained.y;
         }
     }
+
+    /**
+     * Keep the selected element in view when an overlay covers part of the
+     * canvas: pan just enough to bring it into the visible area.
+     */
+    $effect(() => {
+        void bottomInset;
+        void editor.selectedId;
+        untrack(() => {
+            const el = editor.selected;
+            if (!el || gesture || containerWidth <= 0 || containerHeight <= 0) return;
+            const b = measureElement(el, domMeasureText);
+            const zoom = editor.zoom;
+            const margin = 16;
+            const top = panY + el.y * zoom, bottom = top + b.height * zoom;
+            const left = panX + el.x * zoom, right = left + b.width * zoom;
+            let nextX = panX, nextY = panY;
+            if (bottom > visibleHeight - margin) nextY -= bottom - (visibleHeight - margin);
+            if (top + (nextY - panY) < margin) nextY = panY + (margin - top);
+            if (right > containerWidth - margin) nextX -= right - (containerWidth - margin);
+            if (left + (nextX - panX) < margin) nextX = panX + (margin - left);
+            const constrained = constrainPan(nextX, nextY);
+            panX = constrained.x;
+            panY = constrained.y;
+        });
+    });
 
     let hasFit = false;
 

@@ -143,10 +143,18 @@
             </div>
         {:else}
             <div class="rows" style="--fields: {params.length}">
-                <div class="head" aria-hidden="true">
+                <div class="head">
                     <span>#</span>
                     <span>Label</span>
-                    {#each params as p (p.name)}<span>{p.label}</span>{/each}
+                    {#each params as p (p.name)}
+                        <span class="head-field">
+                            {p.label}
+                            {#if rows.length > 1 && (p.type === 'text' || p.type === 'number')}
+                                <button class="number-btn" title="Number {p.label} down the rows from the first value: 1, 2, 3…" aria-label="Number {p.label} down the rows" disabled={printing}
+                                    onclick={() => (editor.batchRows = fillSequence(rows, p.name))}>1, 2, 3</button>
+                            {/if}
+                        </span>
+                    {/each}
                     <span></span>
                 </div>
                 {#each rows as row, i (i)}
@@ -196,6 +204,10 @@
         align-items: center;
         padding: 8px 10px;
     }
+    .head-field { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+    .number-btn { font-size: 11px; font-weight: 500; padding: 1px 6px; min-height: 0; line-height: 1.6; white-space: nowrap; }
+    /* The header's per-field buttons do this on wide screens; cards use the toolbar menu. */
+    .toolbar .number { display: none; }
     .head {
         position: sticky; top: 0; z-index: 1;
         background: var(--panel-2, var(--panel));
@@ -222,6 +234,7 @@
     @container (max-width: 640px) {
         .rows { border: 0; gap: 10px; }
         .head { display: none; }
+        .toolbar .number { display: inline-block; }
         .row {
             grid-template-columns: 1fr auto;
             grid-template-areas: 'n actions';

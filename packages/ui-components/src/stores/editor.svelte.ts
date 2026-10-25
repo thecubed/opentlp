@@ -1215,6 +1215,25 @@ export class EditorStore {
         }, history);
     }
 
+    /**
+     * Set or clear a text element's frame per side: a number fixes that side
+     * (px), `null` lets it follow the text again. A frame without a width
+     * cannot wrap, so clearing the width also turns wrapping off.
+     */
+    setTextFrame(id: string, frame: { w?: number | null; h?: number | null }): void {
+        this.updateEl(id, e => {
+            if (e.type !== 'text') return e;
+            let place = { ...e.place };
+            const geo: { w?: number; h?: number } = {};
+            if (frame.w === null) delete place.w; else if (frame.w !== undefined) geo.w = Math.max(8, Math.round(frame.w));
+            if (frame.h === null) delete place.h; else if (frame.h !== undefined) geo.h = Math.max(8, Math.round(frame.h));
+            if (geo.w !== undefined || geo.h !== undefined) place = placeAtPx(place, geo, this.placeContext(e));
+            const next = { ...e, place };
+            if (frame.w === null) delete next.wrap;
+            return next;
+        }, true);
+    }
+
     /** Add a text field named after its label; returns its name for `{name}`. */
     addField(label: string, defaultValue: string, multiline = false): string {
         const cleanLabel = label.trim() || `Field ${this.template.params.length + 1}`;

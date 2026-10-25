@@ -244,6 +244,27 @@
 
     type MobileDrawerState = 'peek' | 'half' | 'full';
     let mobileDrawer = $state<MobileDrawerState>('peek');
+    let fieldsOpen = $state(false);
+    let canvasArea = $state<HTMLDivElement | null>(null);
+    let drawerEl = $state<HTMLDivElement | null>(null);
+    /** How much of the canvas the phone inspector covers, so the canvas can keep the label above it. */
+    let drawerInset = $state(0);
+    function measureDrawerInset(): void {
+        if (!canvasArea || !drawerEl || getComputedStyle(drawerEl).display === 'none') { drawerInset = 0; return; }
+        const canvas = canvasArea.getBoundingClientRect();
+        const drawer = drawerEl.getBoundingClientRect();
+        drawerInset = Math.max(0, Math.round(canvas.bottom - drawer.top));
+    }
+    $effect(() => {
+        void mobileDrawer;
+        if (!drawerEl) return;
+        // After the height transition settles, and whenever the window changes.
+        const timer = setTimeout(measureDrawerInset, 220);
+        const observer = new ResizeObserver(() => measureDrawerInset());
+        observer.observe(drawerEl);
+        if (canvasArea) observer.observe(canvasArea);
+        return () => { clearTimeout(timer); observer.disconnect(); };
+    });
     let drawerDragged = false;
 
     function stepMobileDrawer(direction: 'up' | 'down'): void {
@@ -956,10 +977,11 @@
                                     onimage={chooseImage}
                                 />
                             </div>
-                            <div class="area-canvas">
+                            <div class="area-canvas" bind:this={canvasArea}>
                                 <EditorCanvas
                                     bind:this={canvasView}
                                     {editor}
+                                    bottomInset={drawerInset}
                                     unprintableLeadingPx={activeCapabilities?.physical?.headToCutterPx || 0}
                                     {unprintableTopBottomPx}
                                     onstagetap={onStageTap}
@@ -989,6 +1011,9 @@
                                         <DockPanel title="Layers" badge={editor.design.elements.length} open={settings.leftOpen} ontoggle={() => toggleSide('left')} grow={!propsOpen}>
                                             <ElementChips {editor} embedded />
                                         </DockPanel>
+                                        <DockPanel title="Fields" badge={editor.template.params.length} open={fieldsOpen} ontoggle={() => (fieldsOpen = !fieldsOpen)} grow={!propsOpen && !settings.leftOpen}>
+                                            <ParametersPanel {editor} embedded />
+                                        </DockPanel>
                                     </div>
                                 {:else}
                                     <button class="rail" title="Show the panels" aria-label="Show the panels" onclick={() => toggleSide('right')}>
@@ -999,7 +1024,7 @@
                             </div>
                             <!-- Mobile/portrait-tablet composition of the same
                                  toolbar and properties components used above. -->
-                            <div class="area-mobile drawer-{mobileDrawer}">
+                            <div class="area-mobile drawer-{mobileDrawer}" bind:this={drawerEl} ontransitionend={measureDrawerInset}>
                                 <div class="drawer-grab">
                                     <button
                                         type="button"
