@@ -6,7 +6,9 @@
      */
     import { printableHeightPx as bandHeightPx } from '../printer/printable';
     import { fromStore } from 'svelte/store';
-    import { DEFAULT_PAPER_PROFILES, type UniversalPrintOptions, type PaperProfile } from 'universal-label-core';
+    import { DEFAULT_PAPER_PROFILES, type UniversalPrintOptions, type UniversalPage, type PaperProfile } from 'universal-label-core';
+    import type { LabelDesign } from 'universal-label-renderer';
+    import BatchPanel from './BatchPanel.svelte';
     import type { PrinterSession } from '../printer/session';
     import type { EditorStore } from '../stores/editor.svelte';
     import { globalSettings as settings, PRINTER_PROFILES } from '../stores/settings.svelte';
@@ -122,40 +124,63 @@
         }))
     );
 
-    async function print(): Promise<void> {
+    /** Labels sent so far in the running print, and how many it has. */
+    let progress = $state<{ done: number; total: number } | undefined>(undefined);
+    let stopper: AbortController | undefined;
+
+    function printOptions(): UniversalPrintOptions {
+        return {
+            paper: activePaper,
+            density,
+            copies: 1,
+            ...(caps?.supportsSpeedMode ? { speed } : {}),
+            ...(activePaper.type === 'continuous' ? { feedOverrides: {
+                feedBeforeMm: feedPlan.beforeDots !== undefined ? feedPlan.beforeDots / caps!.dpmm : undefined,
+                feedAfterMm: feedPlan.afterDots !== undefined ? feedPlan.afterDots / caps!.dpmm : undefined
+            } } : {})
+        };
+    }
+
+    /**
+     * Print these designs, each `copies` times in a row. One job where the
+     * driver can separate labels inside it (DYMO), one job per label otherwise.
+     */
+    async function printDesigns(designs: LabelDesign[]): Promise<void> {
         printError = '';
         printedOk = false;
         evidenceCount = 0;
         evidenceThreshold = 3;
         printing = true;
+        stopper = new AbortController();
         try {
             const requestedCopies = Number.isFinite(copies)
                 ? Math.min(99, Math.max(1, Math.trunc(copies)))
                 : 1;
             copies = requestedCopies;
-            const page = await rasterizeDesign(editor.design, undefined, { inkChannels });
-            const options: UniversalPrintOptions = {
-                paper: activePaper,
-                density,
-                copies: requestedCopies,
-                ...(caps?.supportsSpeedMode ? { speed } : {}),
-                ...(activePaper.type === 'continuous' ? { feedOverrides: {
-                    feedBeforeMm: feedPlan.beforeDots !== undefined ? feedPlan.beforeDots / caps!.dpmm : undefined,
-                    feedAfterMm: feedPlan.afterDots !== undefined ? feedPlan.afterDots / caps!.dpmm : undefined
-                } } : {})
-            };
-            for (let i = 0; i < requestedCopies; i++) {
-                // Drivers treat options.copies as metadata; the spooler prints
-                // one page per print() call, so we loop explicitly.
-                await session.print(page, options);
+            const pages: UniversalPage[] = [];
+            for (const design of designs) {
+                const page = await rasterizeDesign(design, undefined, { inkChannels });
+                for (let i = 0; i < requestedCopies; i++) pages.push(page);
             }
+            progress = { done: 0, total: pages.length };
+            const sent = await session.printBatch(pages, printOptions(), {
+                signal: stopper.signal,
+                onPage: (done, total) => { progress = { done, total }; }
+            });
             printedOk = true;
+            if (sent < pages.length) printError = `Stopped after ${sent} of ${pages.length} labels.`;
             void refreshEvidence(makeReportContext('sent'));
         } catch (err) {
             printError = err instanceof Error ? err.message : String(err);
         } finally {
             printing = false;
+            progress = undefined;
+            stopper = undefined;
         }
+    }
+
+    function print(): Promise<void> {
+        return printDesigns([editor.design]);
     }
 
     function makeReportContext(printResult: 'sent' | 'failed'): PrintReportContext {
@@ -338,8 +363,17 @@
             disabled={snap.state !== 'connected' || printing}
             onclick={print}
         >
-            {printing ? 'Printing…' : `Print ${copies > 1 ? copies + ' copies' : 'label'}`}
+            {printing ? (progress && progress.total > 1 ? `Printing ${progress.done} of ${progress.total}…` : 'Printing…') : `Print ${copies > 1 ? copies + ' copies' : 'label'}`}
         </button>
+        <BatchPanel
+            {editor}
+            {printing}
+            {progress}
+            {copies}
+            canPrint={snap.state === 'connected'}
+            onprint={printDesigns}
+            onstop={() => stopper?.abort()}
+        />
         {#if printError}
             <div class="error">{printError}</div>
             {#if onreport}

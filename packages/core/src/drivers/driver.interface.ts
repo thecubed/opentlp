@@ -202,6 +202,14 @@ export interface PrinterCapabilities {
 import type { PaperProfile } from "../types/paper";
 import type { UniversalPage } from "../types/ink";
 
+/** Progress and cancellation for a multi-page print. */
+export interface PrintPagesHooks {
+    /** Called after each page is sent, with how many are done. */
+    onPage?(done: number, total: number): void;
+    /** Stop after the current page. */
+    signal?: AbortSignal;
+}
+
 /**
  * Unified Print Task Options sent from the UI designer hook
  */
@@ -395,6 +403,16 @@ export interface IPrinterDriver {
      * @param page Separated planes (spot) or a full-gamut bitmap (rgb), with dimensions.
      */
     printPage(page: UniversalPage): Promise<void>;
+
+    /**
+     * Print several pages as ONE job, between `printInit` and `printEnd`.
+     *
+     * For printers that separate labels inside a job (a cut between them)
+     * rather than needing a job per label. Optional: without it, PrintManager
+     * prints a batch as one job per page. Must stop after the current page
+     * once `signal` aborts, still closing the job properly.
+     */
+    printPages?(pages: readonly UniversalPage[], hooks?: PrintPagesHooks): Promise<void>;
 
     /**
      * Commits the print job and closes the session. (e.g. Send print end command, align or cut)

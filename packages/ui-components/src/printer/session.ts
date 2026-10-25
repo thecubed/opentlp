@@ -13,6 +13,7 @@ import {
     type PrinterModelProfile,
     type UniversalPage,
     type UniversalPrintOptions,
+    type PrintPagesHooks,
     type IDeviceTransport,
     type IPrinterDriver,
     type PrinterStatus,
@@ -249,6 +250,28 @@ export class PrinterSession {
         }
         try {
             await this.pm.print(page, options);
+        } catch (err) {
+            const e = toPrinterError(err, 'transport');
+            this.update({ lastError: e });
+            throw e;
+        }
+    }
+
+    /**
+     * Print several labels: one job where the driver can separate labels
+     * inside it, else one job per label. Resolves with how many were sent,
+     * which is fewer than asked when `hooks.signal` stopped it.
+     */
+    async printBatch(pages: readonly UniversalPage[], options: UniversalPrintOptions, hooks: PrintPagesHooks = {}): Promise<number> {
+        if (this.snapshot.state !== 'connected') {
+            throw new PrinterError('not-connected', 'No printer connected.');
+        }
+        const blocker = printBlocker(this.snapshot.status ?? undefined);
+        if (blocker) {
+            throw new PrinterError('device-fault', `Printer not ready: ${blocker.code}.`, { fault: blocker });
+        }
+        try {
+            return await this.pm.printBatch(pages, options, hooks);
         } catch (err) {
             const e = toPrinterError(err, 'transport');
             this.update({ lastError: e });

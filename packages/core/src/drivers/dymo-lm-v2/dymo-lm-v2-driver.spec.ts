@@ -302,6 +302,67 @@ describe('DymoLmV2Driver with the command channel', () => {
     });
 });
 
+describe('DymoLmV2Driver batches', () => {
+    const fastStatus: DymoLmV2DriverOptions = { ...fast, statusTimeoutMs: 50, lockRetryMs: 0 };
+    const pageOf = (width: number) => blankPage(width, 94);
+
+    it('prints different pages as labels of one job, cut between them', async () => {
+        const port = new MockPort();
+        const driver = new DymoLmV2Driver(fast);
+        await driver.bindTransport(port);
+        const progress: string[] = [];
+        await driver.printInit({ density: 1, copies: 1, paper: d1(12) });
+        await driver.printPages!([pageOf(300), pageOf(400), pageOf(250)], { onPage: (done, total) => progress.push(`${done}/${total}`) });
+        await driver.printEnd();
+        expect(commands(port.bytes())).toEqual([
+            's',
+            'n', 'l', 't', 'D', 'raster 300x96',
+            'E', 'p0', 'n', 'l', 't', 'D', 'raster 400x96',
+            'E', 'p0', 'n', 'l', 't', 'D', 'raster 250x96',
+            'E', 'p0', 'Q',
+        ]);
+        expect(progress).toEqual(['1/3', '2/3', '3/3']);
+    });
+
+    it('stops after the current label when aborted, still closing the job', async () => {
+        const port = new MockPort();
+        const driver = new DymoLmV2Driver(fast);
+        await driver.bindTransport(port);
+        const stop = new AbortController();
+        await driver.printInit({ density: 1, copies: 1, paper: d1(12) });
+        await driver.printPages!([pageOf(300), pageOf(300), pageOf(300)], {
+            signal: stop.signal,
+            onPage: done => { if (done === 1) stop.abort(); },
+        });
+        expect(commands(port.bytes())).toEqual(['s', 'n', 'l', 't', 'D', 'raster 300x96', 'E', 'p0', 'Q']);
+    });
+
+    it('claims the printer once, and stops on a fault reported between labels', async () => {
+        const command = new MockCommand([IDLE, IDLE, withBay(1, 3)]);
+        const port = new MockBridgedPort(command);
+        const driver = new DymoLmV2Driver(fastStatus);
+        await driver.bindTransport(port);
+        await driver.printInit({ density: 1, copies: 1 });
+        const error = await driver.printPages!([pageOf(300), pageOf(300), pageOf(300)]).catch(e => e);
+        expect(error.code).toBe('device-fault');
+        expect(error.fault).toMatchObject({ code: 'cover-open' });
+        // ESC A 1 once to claim, then ESC A 0 between labels.
+        expect(command.writes.map(w => w[2])).toEqual([1, 0, 0]);
+        expect(commands(port.bytes()).filter(c => c === 'n').length).toBe(2);
+        expect(commands(port.bytes()).slice(-3)).toEqual(['E', 'p0', 'Q']);
+    });
+
+    it('prints a batch through PrintManager as one job, and copies once each', async () => {
+        const manager = new PrintManager();
+        const port = new MockPort('DYMO ML 0EB7');
+        await manager.connectWithTransport(port);
+        const sent = await manager.printBatch([pageOf(300), pageOf(300)], { density: 1, copies: 3, paper: d1(12) });
+        expect(sent).toBe(2);
+        expect(commands(port.bytes()).filter(c => c === 's' || c === 'n' || c === 'Q')).toEqual(['s', 'n', 'n', 'Q']);
+        await manager.disconnect();
+    });
+});
+
 describe('PrintManager integration', () => {
     it('selects the DYMO driver from the MobileLabeler name and reports no status', async () => {
         const manager = new PrintManager();

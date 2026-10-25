@@ -1,6 +1,6 @@
 import EventEmitter from "eventemitter3";
 import { IDeviceTransport } from "./transports/transport.interface";
-import { IPrinterDriver, UniversalPrintOptions, PrinterModelProfile, PrinterKind } from "../drivers/driver.interface";
+import { IPrinterDriver, UniversalPrintOptions, PrinterModelProfile, PrinterKind, PrintPagesHooks } from "../drivers/driver.interface";
 import type { LoadedMedia, PrinterStatus, StatusField } from "../drivers/printer-status";
 import { PrinterError, toPrinterError } from "../drivers/printer-error";
 import type { UniversalPage } from "../types/ink";
@@ -731,6 +731,52 @@ export class PrintManager extends EventEmitter<PrintManagerEvents> {
             await this.activeDriver.printInit(options);
             await this.activeDriver.printPage(forDriver);
             await this.activeDriver.printEnd();
+        } catch (error: any) {
+            this.emit("error", error);
+            throw error;
+        } finally {
+            this.isPrinting = false;
+            this.emit("idle");
+        }
+    }
+
+    /**
+     * Print several pages: as one job when the driver can separate labels
+     * inside a job, otherwise one job per page. Stops between pages once
+     * `hooks.signal` aborts, and resolves with how many pages were sent.
+     */
+    async printBatch(pages: readonly UniversalPage[], options: UniversalPrintOptions, hooks: PrintPagesHooks = {}): Promise<number> {
+        const driver = this.activeDriver;
+        if (!driver) throw new Error("Cannot print, no active printer driver.");
+        if (this.isPrinting) throw new Error("Printer is currently busy.");
+        if (pages.length === 0) return 0;
+
+        const channels = driver.getCapabilities().colorSupport.channels ?? 1;
+        const forDriver = pages.map(page => reduceToChannels(page, channels));
+        const single = { ...options, copies: 1 };
+        let done = 0;
+        const onPage = () => {
+            done += 1;
+            hooks.onPage?.(done, forDriver.length);
+        };
+
+        this.isPrinting = true;
+        this.emit("printing");
+        try {
+            if (driver.printPages) {
+                await driver.printInit(single);
+                await driver.printPages(forDriver, { signal: hooks.signal, onPage });
+                await driver.printEnd();
+            } else {
+                for (const page of forDriver) {
+                    if (hooks.signal?.aborted) break;
+                    await driver.printInit(single);
+                    await driver.printPage(page);
+                    await driver.printEnd();
+                    onPage();
+                }
+            }
+            return done;
         } catch (error: any) {
             this.emit("error", error);
             throw error;

@@ -4,6 +4,7 @@ import type {
     IPrinterDriver,
     PrinterCapabilities,
     PrinterModelProfile,
+    PrintPagesHooks,
     UniversalPrintOptions,
 } from '../driver.interface';
 import { PrinterError } from '../printer-error';
@@ -171,26 +172,57 @@ export class DymoLmV2Driver implements IPrinterDriver {
     }
 
     async printPage(page: UniversalPage): Promise<void> {
+        const copies = Math.max(1, Math.min(0xffff, Math.round(this.currentOptions?.copies ?? 1)));
+        await this.printPages(Array.from({ length: copies }, () => page));
+    }
+
+    /**
+     * Every page as one label of one job, with a feed and cut between them:
+     * the printer is claimed once, and with the command channel open its
+     * faults are checked between labels, as DYMO's app does.
+     */
+    async printPages(pages: readonly UniversalPage[], hooks: PrintPagesHooks = {}): Promise<void> {
+        if (pages.length === 0) return;
+        if (pages.length > 0xffff) throw new PrinterError('unsupported', 'A DYMO job holds at most 65535 labels.');
         const options = this.currentOptions ?? { density: 1, copies: 1 };
         const tape = this.command ? tapeFromStatus(await this.claimPrinter(), options) : tapeFor(options);
-        const raster = encodeD1Raster(singlePlane(page), tape);
-        const copies = Math.max(1, Math.min(0xffff, Math.round(options.copies ?? 1)));
+        // Encode everything before sending anything, so a bad page cannot leave a job half sent.
+        const rasters = pages.map(page => encodeD1Raster(singlePlane(page), tape));
 
+        let fault: PrinterFault | undefined;
         await this.send(startJob(this.opts.jobId() >>> 0));
-        for (let index = 1; index <= copies; index += 1) {
-            if (index > 1) {
+        for (let index = 0; index < rasters.length; index += 1) {
+            if (index > 0) {
+                if (hooks.signal?.aborted) break;
+                fault = await this.faultBetweenLabels();
+                if (fault) break;
                 await this.send(formFeed());
                 await this.send(cut());
             }
-            await this.send(labelIndex(index));
+            const raster = rasters[index];
+            await this.send(labelIndex(index + 1));
             await this.send(labelLeader(DEFAULT_LEADER_LINES));
             await this.send(labelTrailer(DEFAULT_TRAILER_LINES));
             await this.send(printDataHeader(raster.lineCount, raster.lineBits));
             await this.sendChunked(raster.data);
+            hooks.onPage?.(index + 1, rasters.length);
         }
         await this.send(formFeed());
         await this.send(cut());
         await this.send(endJob());
+        if (fault) {
+            throw new PrinterError('device-fault', `Stopped between labels: ${fault.message ?? fault.code}.`, { fault });
+        }
+    }
+
+    /** A blocking fault reported mid-job, if the command channel can tell. A silent printer is not a fault. */
+    private async faultBetweenLabels(): Promise<PrinterFault | undefined> {
+        if (!this.command) return undefined;
+        try {
+            return faultsOf(await this.readStatus(false)).find(fault => fault.blocking);
+        } catch {
+            return undefined;
+        }
     }
 
     async printEnd(): Promise<void> {

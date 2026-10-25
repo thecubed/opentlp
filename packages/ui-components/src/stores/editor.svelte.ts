@@ -172,6 +172,11 @@ export class EditorStore {
     /** Parameter values used to resolve the preview (defaults while authoring). */
     params = $state<Record<string, unknown>>({});
     /**
+     * Field values for batch printing, one entry per label. Working state for
+     * the open template; reset when another one is opened.
+     */
+    batchRows = $state<Record<string, string | number | boolean>[]>([]);
+    /**
      * Unprintable margins around the printable canvas, in px (set by the app
      * shell from the printer's capabilities). Only consulted when the template
      * positions against the whole media — see `adaptivity.relativeTo`.
@@ -254,13 +259,13 @@ export class EditorStore {
         });
     }
 
-    private resolveAt(widthPx: number): LabelDesign {
+    private resolveAt(widthPx: number, params: Record<string, unknown> = this.params): LabelDesign {
         const { design } = resolveTemplate(this.template, {
             widthPx, heightPx: this.heightPx,
             tapeWidthMm: this.tapeWidthMm,
             dpmm: this.authoringDpmm,
             labelLengthMm: this.paper?.labelLengthMm ?? widthPx / this.authoringDpmm,
-            params: this.params, measureText: measurer(),
+            params, measureText: measurer(),
             mediaInsets: this.mediaInsets,
             cornerRadiusMm: this.paper?.borderRadiusMm
         });
@@ -288,15 +293,22 @@ export class EditorStore {
      * (Content anchored to the right edge is inherently circular under
      * auto-length; the second pass is where it settles.)
      */
-    readonly design = $derived.by<LabelDesign>(() => {
-        let design = this.resolveAt(this.widthPx);
+    readonly design = $derived.by<LabelDesign>(() => this.designWith(this.params));
+
+    /**
+     * The design as it would print with these field values — the same
+     * resolution as {@link design}, auto-length included. Batch printing
+     * resolves one of these per label.
+     */
+    designWith(params: Record<string, unknown>): LabelDesign {
+        let design = this.resolveAt(this.widthPx, params);
         if (this.autoLength) {
             const padPx = (this.template.adaptivity.autoLengthPadMm ?? 2) * this.pxPerMm;
             const needed = Math.max(8, Math.round(contentExtentPx(design, measurer()) + padPx));
-            if (needed !== this.widthPx) design = this.resolveAt(needed);
+            if (needed !== this.widthPx) design = this.resolveAt(needed, params);
         }
         return { ...design, paper: this.paper, inkBindings: this.inkBindings };
-    });
+    }
 
     /** The length actually rendered/printed (differs from `widthPx` under auto-length). */
     get effectiveWidthPx(): number { return this.design.widthPx; }
@@ -751,6 +763,7 @@ export class EditorStore {
         this.heightPx = Math.max(8, Math.round(tapeWidthMm * this.authoringDpmm));
         this.widthPx = Math.max(8, Math.round(lengthMm * this.authoringDpmm));
         this.params = defaultsOf(tpl.params);
+        this.batchRows = [];
         this.selectedId = null;
         this.authoring = false;
     }
