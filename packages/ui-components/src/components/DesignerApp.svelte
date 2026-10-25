@@ -36,6 +36,8 @@
     import PreviewBar from './PreviewBar.svelte';
     import ConnectPanel from './ConnectPanel.svelte';
     import PrintPanel from './PrintPanel.svelte';
+    import BatchList from './BatchList.svelte';
+    import FillInFields from './FillInFields.svelte';
     import DesignLibraryScreen from './DesignLibraryScreen.svelte';
     import DesignDetailScreen from './DesignDetailScreen.svelte';
     import TemplateInputsPanel from './TemplateInputsPanel.svelte';
@@ -552,7 +554,13 @@
 
     /** The filled template is already the editor's document — just go print it. */
     function printTemplateDesign(): void {
+        editor.printMode = 'single';
         view = 'print';
+    }
+    /** Open the print view as one label or as a batch. */
+    function openPrint(mode: 'single' | 'batch'): void {
+        editor.printMode = mode;
+        editorCommands.print();
     }
     /** Drop into the full editor on the same document (relative placements stay live). */
     function customizeTemplate(): void {
@@ -851,10 +859,20 @@
             <button class="icon-btn menu-owned-action" onclick={editorCommands.redo} disabled={!editor.canRedo} title="Redo (Ctrl+Y)" aria-label="Redo"><Icon name="redo" /></button>
             <button class="chip paper-chip state-connected" title="Paper: {paperLabel}" aria-label="Paper: {paperLabel}. Open paper settings" onclick={() => (sheet = 'paper')}><Icon name="tag" size={16} /><span class="chip-text desktop-label">{paperLabel}</span><span class="chip-text mobile-label">{mobilePaperLabel}</span><span class="status-chevron"><Icon name="chevron-down" size={14} /></span></button>
             <button class="chip printer-chip state-{snap.state}" title={battery ? `${chipLabel} · Battery ${battery}` : chipLabel} aria-label="{chipLabel}. Open printer settings" onclick={() => (sheet = 'printer')}>{#if chipArtwork}<PrinterMark artwork={chipArtwork} size={24} led={chipLed} />{:else}<Icon name="printer" size={16} />{/if}<span class="chip-text desktop-label">{chipLabel}</span><span class="chip-text mobile-label">{mobilePrinterLabel}</span><span class="status-chevron"><Icon name="chevron-down" size={14} /></span></button>
-            <button class="print-btn" onclick={() => (view === 'print' ? view = 'editor' : editorCommands.print())} title={view === 'print' ? 'Back to design' : 'Print (Ctrl+P)'}>
-                <Icon name={view === 'print' ? 'pencil' : 'printer'} />
-                {view === 'print' ? 'Design' : 'Print'}
-            </button>
+            {#if view === 'print'}
+                <button class="print-btn" onclick={() => (view = 'editor')} title="Back to design">
+                    <Icon name="pencil" /> Design
+                </button>
+            {:else}
+                <div class="print-split" role="group" aria-label="Print">
+                    <button class="print-btn" onclick={() => openPrint('single')} title="Print (Ctrl+P)">
+                        <Icon name="printer" /> Print
+                    </button>
+                    <button class="print-btn batch-half" onclick={() => openPrint('batch')} title="Print a batch: this design with different field values" aria-label="Print a batch">
+                        <Icon name="layers" />
+                    </button>
+                </div>
+            {/if}
         {:else if activeExtra}
             <button class="icon-btn" title="Back" aria-label="Back" onclick={() => { goBack(); history.pushState(null, ''); }}><Icon name="arrow-left" /></button>
             <h1>{activeExtra.label}</h1>
@@ -1026,7 +1044,7 @@
                         <button class="sheet" class:active={tplSheet === 'adapt'} onclick={() => openTemplateSheet('adapt')}><Icon name="save" size={14} /> Compatibility</button>
                         <span class="spacer"></span>
                         <button class="sheet-action" onclick={() => { editor.makeTemplate(); sheet = 'params'; }}>
-                            Fields ({editor.templateMeta?.params.length ?? 0})
+                            Fields ({editor.template.params.length})
                         </button>
                         <button class="sheet-action primary" onclick={() => openTemplateSheet('adapt')}><Icon name="save" size={14} /> Save design…</button>
                     </div>
@@ -1042,25 +1060,54 @@
                 <input bind:this={imageInput} type="file" accept="image/*" hidden onchange={onImageFiles} />
             </div>
         {:else if view === 'print'}
-            <div class="print-view">
-                <section class="print-section">
-                    <h2>Label preview</h2>
-                    <div class="print-frame">
-                        <PreviewBar {editor} {session} />
-                    </div>
-                </section>
-                <section class="print-section">
-                    <h2>Printer</h2>
-                    <div class="print-frame">
-                        <ConnectPanel {session} {transports} onreportmissing={openMissingPrinterReport} />
-                    </div>
-                </section>
-                <section class="print-section">
-                    <h2>Print options</h2>
-                    <div class="print-frame">
-                    <PrintPanel {session} {editor} runtime={reportRuntime} onreport={openPrintReport} />
-                    </div>
-                </section>
+            <div class="print-view" class:batch={editor.printMode === 'batch'}>
+                <div class="print-mode seg-tabs" role="tablist" aria-label="What to print">
+                    <button role="tab" aria-selected={editor.printMode === 'single'} class:on={editor.printMode === 'single'}
+                        disabled={editor.printProgress !== undefined}
+                        onclick={() => (editor.printMode = 'single')}><Icon name="printer" size={15} /> One label</button>
+                    <button role="tab" aria-selected={editor.printMode === 'batch'} class:on={editor.printMode === 'batch'}
+                        disabled={editor.printProgress !== undefined}
+                        onclick={() => (editor.printMode = 'batch')}><Icon name="layers" size={15} /> Batch{editor.batchRows.length ? ` (${editor.batchRows.length})` : ''}</button>
+                </div>
+                <div class="print-main">
+                    {#if editor.printMode === 'single'}
+                        <section class="print-section">
+                            <h2>Label preview</h2>
+                            <div class="print-frame">
+                                <PreviewBar {editor} {session} />
+                            </div>
+                        </section>
+                        {#if editor.template.params.length > 0}
+                            <section class="print-section">
+                                <h2>Fields</h2>
+                                <div class="print-frame">
+                                    <FillInFields {editor} />
+                                </div>
+                            </section>
+                        {/if}
+                    {:else}
+                        <section class="print-section">
+                            <h2>Labels</h2>
+                            <div class="print-frame">
+                                <BatchList {editor} />
+                            </div>
+                        </section>
+                    {/if}
+                </div>
+                <aside class="print-side">
+                    <section class="print-section">
+                        <h2>Printer</h2>
+                        <div class="print-frame">
+                            <ConnectPanel {session} {transports} onreportmissing={openMissingPrinterReport} />
+                        </div>
+                    </section>
+                    <section class="print-section">
+                        <h2>Print options</h2>
+                        <div class="print-frame">
+                        <PrintPanel {session} {editor} runtime={reportRuntime} onreport={openPrintReport} />
+                        </div>
+                    </section>
+                </aside>
             </div>
         {:else if activeExtra}
             {@render activeExtra.content()}
@@ -1086,7 +1133,7 @@
             <button class:active={tplSheet === 'design'} onclick={() => { tplSheet = 'design'; sheet = null; }}><Icon name="pencil" size={16} /> Design</button>
             <button class:active={tplSheet === 'preview'} onclick={() => { sheet = null; openTemplateSheet('preview'); }}><Icon name="type" size={16} /> Test fields</button>
             <button class:active={tplSheet === 'adapt'} onclick={() => { sheet = null; openTemplateSheet('adapt'); }}><Icon name="save" size={16} /> Compatibility &amp; save</button>
-            <button onclick={() => { editor.makeTemplate(); sheet = 'params'; }}>Fields ({editor.templateMeta?.params.length ?? 0})</button>
+            <button onclick={() => { editor.makeTemplate(); sheet = 'params'; }}>Fields ({editor.template.params.length})</button>
         </nav>
         <h2>Layout</h2>
         <Toolbar {editor} activeTab="Layout" />
@@ -1897,7 +1944,8 @@
         .app.mode-editor header .spacer { display: none; }
         .app.mode-editor header .save-state { display: none; }
         .app.mode-editor header > .chip,
-        .app.mode-editor header > .print-btn {
+        .app.mode-editor header > .print-btn,
+        .app.mode-editor header > .print-split {
             order: 2;
         }
         .app.mode-editor header > .chip {
@@ -1906,11 +1954,14 @@
             max-width: none;
             padding: 6px 8px;
         }
-        .app.mode-editor header > .print-btn {
+        .app.mode-editor header > .print-btn,
+        .app.mode-editor header > .print-split {
             flex: 1 1 80px;
             min-width: 0;
             padding-inline: 12px;
         }
+        .app.mode-editor header > .print-split { padding-inline: 0; }
+        .app.mode-editor header > .print-split > .print-btn:first-child { flex: 1; }
         header.hero {
             flex-wrap: wrap;
             padding: 12px 0 6px;
@@ -2051,15 +2102,57 @@
     }
 
     .print-view {
-        display: flex;
-        flex-direction: column;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: 'mode' 'main' 'side';
+        /* Rows take their content's height even when the view is shorter. */
+        grid-auto-rows: max-content;
+        align-content: start;
         gap: 18px;
         width: 100%;
-        max-width: 620px;
+        max-width: 640px;
         margin: 0 auto;
         padding: 18px 14px calc(24px + env(safe-area-inset-bottom));
         box-sizing: border-box;
         overflow-y: auto;
+    }
+    .print-mode { grid-area: mode; }
+    .print-main, .print-side { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+    .print-main { grid-area: main; }
+    .print-side { grid-area: side; }
+    /* Wide: the label(s) get the room, printer and options sit beside them. */
+    @media (min-width: 1000px) {
+        .print-view {
+            max-width: 1500px;
+            grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
+            grid-template-areas: 'mode mode' 'main side';
+            column-gap: 24px;
+            padding-inline: 24px;
+        }
+        .print-side { position: sticky; top: 0; align-self: start; }
+    }
+    .seg-tabs {
+        display: inline-flex;
+        justify-self: start;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        overflow: hidden;
+        background: var(--panel);
+    }
+    .seg-tabs button {
+        display: inline-flex; align-items: center; gap: 6px;
+        border: 0; border-radius: 0; box-shadow: none;
+        padding: 8px 16px; background: transparent; color: var(--text);
+    }
+    .seg-tabs button + button { border-left: 1px solid var(--border); }
+    .seg-tabs button:hover { transform: none; }
+    .seg-tabs button.on { background: var(--accent); color: var(--accent-fg, #fff); }
+    .print-split { display: inline-flex; }
+    .print-split .print-btn:first-child { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+    .print-split .batch-half {
+        border-top-left-radius: 0; border-bottom-left-radius: 0;
+        border-left: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+        padding-inline: 10px;
     }
     .print-section {
         display: flex;

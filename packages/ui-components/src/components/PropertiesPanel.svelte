@@ -15,6 +15,7 @@
     } from 'universal-label-renderer';
     import Icon from './Icon.svelte';
     import ResponsivePanel from './ResponsivePanel.svelte';
+    import FieldTextArea from './FieldTextArea.svelte';
     import PositionPanel from './PositionPanel.svelte';
 
     interface Props {
@@ -142,6 +143,21 @@
     /** Which edge/centre the element is anchored to, per axis (drives the Align toggles). */
 </script>
 
+{#snippet content(id: string, multiline: boolean, rows: number)}
+    <FieldTextArea
+        value={editor.contentSource(id)}
+        params={editor.template.params}
+        {multiline}
+        {rows}
+        label={el?.type === 'text' ? 'Text' : 'Data'}
+        onfocus={() => editor.beginTransform()}
+        onblur={() => editor.endTransform()}
+        oninput={source => editor.setContentSource(id, source)}
+        oncommit={source => editor.setContentSource(id, source, true)}
+        oncreatefield={(label, defaultValue) => editor.addField(label, defaultValue, el?.type === 'text')}
+    />
+{/snippet}
+
 {#if el}
     <div class="panel">
         <div class="row head">
@@ -166,12 +182,13 @@
                 aria-expanded={advancedOpen}
                 onclick={() => advancedOpen = !advancedOpen}
             >
-                <span>Advanced layout</span>
+                <span>Position &amp; layout</span>
                 <Icon name={advancedOpen ? 'chevron-up' : 'chevron-down'} size={15} />
             </button>
             <div class="advanced-body">
                 <!-- Position: one rule per coordinate, canvas- or element-relative. -->
                 <PositionPanel {editor} />
+                <ResponsivePanel {editor} section="limits" />
 
         <div class="row">
             <span class="lbl">Rotate</span>
@@ -281,207 +298,164 @@
             </div>
         </section>
 
-        {#if editor.isTemplateMode && el.type !== 'image'}
-            {@const bound = editor.selectedAuthoring?.bind}
-            <div class="row editable-row">
-                <label class="check">
-                    <input type="checkbox" checked={!!bound} onchange={e => (e.currentTarget.checked ? editor.makeEditable(el.id) : editor.bindField(el.id, undefined))} />
-                    <strong>Editable field</strong>
-                </label>
-                {#if bound}
-                    <input
-                        type="text"
-                        value={editor.templateMeta?.params.find(p => p.name === bound)?.label ?? bound}
-                        placeholder="Field label"
-                        title="What the template's user sees as the field name"
-                        onchange={e => editor.updateParam(bound, { label: e.currentTarget.value })}
-                    />
-                {:else}
-                    <span class="note">Let the template's user fill this {el.type === 'text' ? 'text' : 'value'} in.</span>
-                {/if}
-            </div>
-        {/if}
-
         {#if el.type === 'text'}
-            <label class="row">
-                <span class="lbl">Text</span>
-                <textarea
-                    rows="2"
-                    value={el.text}
-                    onfocus={() => editor.beginTransform()}
-                    oninput={e => live({ text: e.currentTarget.value })}
-                    onblur={() => editor.endTransform()}
-                ></textarea>
-            </label>
-            <div class="row">
-                <span class="lbl">Font</span>
-                <select
-                    value={el.font}
-                    onchange={e => commit({ font: e.currentTarget.value as 'bitmap' | 'vector' })}
-                >
-                    <option value="bitmap">Pixel (crisp)</option>
-                    <option value="vector">System font</option>
-                </select>
-                <button
-                    type="button"
-                    class="info"
-                    aria-label="Pixel stays crisp at small–medium sizes; use a system font for larger text."
-                    data-tip="Pixel stays crisp at small–medium sizes; use a system font for larger text."
-                    onclick={(e) => e.currentTarget.focus()}
-                ><Icon name="info" size={16} /></button>
-                {#if el.font === 'vector'}
-                    <select value={el.fontFamily} onchange={e => commit({ fontFamily: e.currentTarget.value })}>
-                        {#each editor.systemFonts as f (f)}
-                            <option value={f}>{f}</option>
-                        {/each}
+            {@const a = editor.selectedAuthoring}
+            {@const boxMode = el.width === undefined && el.height === undefined ? 'fit' : el.height === undefined ? 'width' : 'box'}
+            <div class="group">
+                <span class="group-title">Content</span>
+                {@render content(el.id, true, 2)}
+            </div>
+
+            <div class="group">
+                <span class="group-title">Font</span>
+                <div class="row">
+                    <select
+                        value={el.font}
+                        onchange={e => commit({ font: e.currentTarget.value as 'bitmap' | 'vector' })}
+                    >
+                        <option value="bitmap">Pixel (crisp)</option>
+                        <option value="vector">System font</option>
                     </select>
-                {:else if exactFont}
-                    <select value={el.bitmapFont} onchange={e => commit({ bitmapFont: e.currentTarget.value })}>
-                        {#each FONT_MANIFEST as f (f.id)}
-                            <option value={f.id}>{f.label} ({f.w}×{f.h})</option>
-                        {/each}
-                    </select>
-                {:else}
-                    <select value={pixelFamily} onchange={e => commit({ bitmapFont: e.currentTarget.value })}>
-                        {#each FONT_FAMILIES as fam (fam.key)}
-                            <option value={fam.key}>{fam.label}</option>
-                        {/each}
-                    </select>
+                    {#if el.font === 'vector'}
+                        <select value={el.fontFamily} onchange={e => commit({ fontFamily: e.currentTarget.value })}>
+                            {#each editor.systemFonts as f (f)}
+                                <option value={f}>{f}</option>
+                            {/each}
+                        </select>
+                    {:else if exactFont}
+                        <select value={el.bitmapFont} onchange={e => commit({ bitmapFont: e.currentTarget.value })}>
+                            {#each FONT_MANIFEST as f (f.id)}
+                                <option value={f.id}>{f.label} ({f.w}×{f.h})</option>
+                            {/each}
+                        </select>
+                    {:else}
+                        <select value={pixelFamily} onchange={e => commit({ bitmapFont: e.currentTarget.value })}>
+                            {#each FONT_FAMILIES as fam (fam.key)}
+                                <option value={fam.key}>{fam.label}</option>
+                            {/each}
+                        </select>
+                    {/if}
+                    <button
+                        type="button"
+                        class="info"
+                        aria-label="Pixel stays crisp at small–medium sizes; use a system font for larger text."
+                        data-tip="Pixel stays crisp at small–medium sizes; use a system font for larger text."
+                        onclick={(e) => e.currentTarget.focus()}
+                    ><Icon name="info" size={16} /></button>
+                </div>
+                {#if el.font === 'vector' && editor.canLoadSystemFonts && !editor.systemFontsLoaded}
+                    <div class="row">
+                        <button onclick={() => editor.loadSystemFonts()}>Load installed fonts…</button>
+                        <span class="note">Add all fonts installed on this device.</span>
+                    </div>
                 {/if}
-            </div>
-
-            <div class="row">
-                <span class="lbl">Style</span>
-                <div class="style-group">
-                    <button class="style-btn" class:on={el.bold} title="Bold" aria-label="Bold" onclick={() => commit({ bold: !el.bold })}><Icon name="bold" size={16} /></button>
-                    <button class="style-btn" class:on={el.italic} title="Italic" aria-label="Italic" onclick={() => commit({ italic: !el.italic })}><Icon name="italic" size={16} /></button>
-                    <button class="style-btn" class:on={el.underline} title="Underline" aria-label="Underline" onclick={() => commit({ underline: !el.underline })}><Icon name="underline" size={16} /></button>
-                </div>
-            </div>
-
-            {#if el.font === 'vector' && editor.canLoadSystemFonts && !editor.systemFontsLoaded}
-                <div class="row">
-                    <span class="lbl"></span>
-                    <button onclick={() => editor.loadSystemFonts()}>Load installed fonts…</button>
-                    <span class="note">Add all fonts installed on this device.</span>
-                </div>
-            {/if}
-
-            {#if el.font === 'bitmap'}
-                <div class="row">
-                    <span class="lbl"></span>
-                    <label class="check">
-                        <input type="checkbox" checked={exactFont} onchange={e => setExactFont(e.currentTarget.checked)} />
-                        Pick exact font
-                    </label>
-                    {#if !exactFont && resolved}
-                        <span class="note">Auto-fit → {resolved.meta.label} ×{resolved.scale} = {resolved.renderedH}px</span>
+                <ResponsivePanel {editor} section="size" />
+                {#if el.font === 'bitmap'}
+                    <div class="row">
+                        <span class="lbl"></span>
+                        <label class="check">
+                            <input type="checkbox" checked={exactFont} onchange={e => setExactFont(e.currentTarget.checked)} />
+                            Pick exact font
+                        </label>
+                        {#if !exactFont && resolved}
+                            <span class="note">→ {resolved.meta.label} ×{resolved.scale} = {resolved.renderedH}px</span>
+                        {/if}
+                    </div>
+                {/if}
+                <div class="row tool-row">
+                    <div class="seg-group" role="group" aria-label="Style">
+                        <button class="style-btn" class:on={el.bold} title="Bold" aria-label="Bold" aria-pressed={el.bold} onclick={() => commit({ bold: !el.bold })}><Icon name="bold" size={16} /></button>
+                        <button class="style-btn" class:on={el.italic} title="Italic" aria-label="Italic" aria-pressed={el.italic} onclick={() => commit({ italic: !el.italic })}><Icon name="italic" size={16} /></button>
+                        <button class="style-btn" class:on={el.underline} title="Underline" aria-label="Underline" aria-pressed={el.underline} onclick={() => commit({ underline: !el.underline })}><Icon name="underline" size={16} /></button>
+                    </div>
+                    <div class="seg-group" role="group" aria-label="Align text">
+                        {#each [['left', 'align-left'], ['center', 'align-center-h'], ['right', 'align-right']] as const as [value, icon] (value)}
+                            <button class="style-btn" class:on={el.align === value} title="Align {value}" aria-label="Align {value}" aria-pressed={el.align === value} onclick={() => commit({ align: value })}><Icon name={icon} size={16} /></button>
+                        {/each}
+                    </div>
+                    <button class="style-btn knock" class:on={!!el.invert} title="Knockout: white text on a solid block" aria-label="Knockout" aria-pressed={!!el.invert} onclick={() => commit({ invert: el.invert ? undefined : true })}><Icon name="invert" size={16} /> Knockout</button>
+                    {#if el.invert}
+                        <label class="check" title="Padding around the text inside the block">
+                            Pad
+                            <input
+                                class="pad"
+                                type="number" min="0" max="40" value={el.invertPad ?? 4}
+                                onfocus={() => editor.beginTransform()}
+                                oninput={e => live({ invertPad: Math.max(0, Number(e.currentTarget.value)) })}
+                                onblur={() => editor.endTransform()}
+                            />
+                        </label>
                     {/if}
                 </div>
-            {/if}
-            <div class="row">
-                <label class="check">
-                    <input
-                        type="checkbox"
-                        checked={el.wrap === true}
-                        onchange={e => commit(e.currentTarget.checked
-                            ? { wrap: true, width: el.width ?? Math.max(24, Math.round(editor.design.widthPx - el.x - 8)) }
-                            : { wrap: undefined })}
-                        title="Break long lines at the box width"
-                    />
-                    Wrap text
-                </label>
-                {#if !el.wrap}
-                    <span class="note">Long text runs on one line; ⏎ still breaks lines.</span>
-                {/if}
             </div>
 
-            <!-- The text frame. Either side may be left on Auto, in which case
-                 that dimension hugs the glyphs. -->
-            <div class="row">
-                <span class="lbl">Text box</span>
-                <label class="check">
-                    <input
-                        type="checkbox"
-                        checked={el.width !== undefined}
-                        onchange={e => commit({ width: e.currentTarget.checked ? Math.round(textInk.width) : undefined })}
-                    />
-                    W
-                </label>
-                <input
-                    class="num" type="number" min="8" max={editor.design.widthPx}
-                    disabled={el.width === undefined}
-                    value={el.width ?? Math.round(textInk.width)}
-                    onfocus={() => editor.beginTransform()}
-                    oninput={e => live({ width: Math.max(8, Number(e.currentTarget.value)) })}
-                    onblur={() => editor.endTransform()}
-                />
-                <label class="check">
-                    <input
-                        type="checkbox"
-                        checked={el.height !== undefined}
-                        onchange={e => commit({ height: e.currentTarget.checked ? Math.round(textInk.height) : undefined })}
-                    />
-                    H
-                </label>
-                <input
-                    class="num" type="number" min="8" max={editor.design.heightPx}
-                    disabled={el.height === undefined}
-                    value={el.height ?? Math.round(textInk.height)}
-                    onfocus={() => editor.beginTransform()}
-                    oninput={e => live({ height: Math.max(8, Number(e.currentTarget.value)) })}
-                    onblur={() => editor.endTransform()}
-                />
-                <span class="note">unticked = auto</span>
-            </div>
-            <ResponsivePanel {editor} section="size" />
-            <div class="row">
-                <span class="lbl">Align text</span>
-                <select value={el.align} onchange={e => commit({ align: e.currentTarget.value as 'left' | 'center' | 'right' })}>
-                    <option value="left">Left</option>
-                    <option value="center">Center</option>
-                    <option value="right">Right</option>
-                </select>
-                <select
-                    value={el.valign ?? 'top'}
-                    disabled={el.height === undefined}
-                    title={el.height === undefined ? 'Set a box height to place the text vertically' : undefined}
-                    onchange={e => commit({ valign: e.currentTarget.value as 'top' | 'middle' | 'bottom' })}
-                >
-                    <option value="top">Top</option>
-                    <option value="middle">Middle</option>
-                    <option value="bottom">Bottom</option>
-                </select>
-            </div>
-            <div class="row">
-                <label class="check">
-                    <input type="checkbox" checked={!!el.invert} onchange={e => commit({ invert: e.currentTarget.checked || undefined })} />
-                    <Icon name="invert" size={13} /> Knockout
-                </label>
-                {#if el.invert}
-                    <label class="check">
-                        Pad
-                        <input
-                            class="pad"
-                            type="number" min="0" max="40" value={el.invertPad ?? 4}
-                            onfocus={() => editor.beginTransform()}
-                            oninput={e => live({ invertPad: Math.max(0, Number(e.currentTarget.value)) })}
-                            onblur={() => editor.endTransform()}
-                        />
-                    </label>
+            <!-- The text frame: hug the glyphs, or a fixed width / box the text sits in. -->
+            <div class="group">
+                <span class="group-title">Text box</span>
+                <div class="seg-group wide" role="radiogroup" aria-label="Text box size">
+                    <button class="seg" class:on={boxMode === 'fit'} role="radio" aria-checked={boxMode === 'fit'}
+                        title="The box hugs the text"
+                        onclick={() => commit({ width: undefined, height: undefined, wrap: undefined })}>Fit text</button>
+                    <button class="seg" class:on={boxMode === 'width'} role="radio" aria-checked={boxMode === 'width'}
+                        title="A fixed width; the height follows the text"
+                        onclick={() => commit({ width: el.width ?? Math.round(textInk.width), height: undefined })}>Fixed width</button>
+                    <button class="seg" class:on={boxMode === 'box'} role="radio" aria-checked={boxMode === 'box'}
+                        title="A fixed width and height; the text sits inside"
+                        onclick={() => commit({ width: el.width ?? Math.round(textInk.width), height: el.height ?? Math.round(textInk.height) })}>Fixed box</button>
+                </div>
+                {#if boxMode !== 'fit'}
+                    <div class="row">
+                        <label class="check">W
+                            <input
+                                class="num" type="number" min="8" max={editor.design.widthPx}
+                                value={el.width ?? Math.round(textInk.width)}
+                                onfocus={() => editor.beginTransform()}
+                                oninput={e => live({ width: Math.max(8, Number(e.currentTarget.value)) })}
+                                onblur={() => editor.endTransform()}
+                            />
+                        </label>
+                        {#if boxMode === 'box'}
+                            <label class="check">H
+                                <input
+                                    class="num" type="number" min="8" max={editor.design.heightPx}
+                                    value={el.height ?? Math.round(textInk.height)}
+                                    onfocus={() => editor.beginTransform()}
+                                    oninput={e => live({ height: Math.max(8, Number(e.currentTarget.value)) })}
+                                    onblur={() => editor.endTransform()}
+                                />
+                            </label>
+                            <div class="seg-group" role="group" aria-label="Vertical position">
+                                {#each [['top', 'align-top'], ['middle', 'align-center-v'], ['bottom', 'align-bottom']] as const as [value, icon] (value)}
+                                    <button class="style-btn" class:on={(el.valign ?? 'top') === value} title="Text at the {value}" aria-label="Text at the {value}" aria-pressed={(el.valign ?? 'top') === value} onclick={() => commit({ valign: value })}><Icon name={icon} size={16} /></button>
+                                {/each}
+                            </div>
+                        {/if}
+                        <span class="note">px</span>
+                    </div>
+                {/if}
+                <div class="row">
+                    {#if boxMode !== 'fit'}
+                        <label class="check" title="Break long lines at the box width">
+                            <input type="checkbox" checked={el.wrap === true} onchange={e => commit({ wrap: e.currentTarget.checked || undefined })} />
+                            Wrap long lines
+                        </label>
+                    {/if}
+                    {#if a}
+                        <label class="check" title="Make the text smaller until it fits">
+                            <input type="checkbox" checked={a.autofit ?? false} onchange={e => editor.setAutofit(el.id, e.currentTarget.checked)} />
+                            Shrink to fit {boxMode === 'fit' ? 'the label' : 'the box'}
+                        </label>
+                    {/if}
+                </div>
+                {#if boxMode === 'fit' && !el.wrap}
+                    <span class="note">Runs on one line; Enter starts a new one.</span>
                 {/if}
             </div>
         {:else if el.type === 'barcode'}
-            <label class="row">
-                <span class="lbl">Data</span>
-                <input
-                    type="text"
-                    value={el.data}
-                    onfocus={() => editor.beginTransform()}
-                    oninput={e => live({ data: e.currentTarget.value })}
-                    onblur={() => editor.endTransform()}
-                />
-            </label>
+            <div class="group">
+                <span class="group-title">Data</span>
+                {@render content(el.id, false, 1)}
+            </div>
             <div class="row">
                 <span class="lbl">Symbology</span>
                 <select value={el.symbology ?? 'code128'} onchange={e => commit({ symbology: e.currentTarget.value as LinearSymbology })}>
@@ -500,16 +474,10 @@
                 <label class="check"><input type="checkbox" checked={el.showText} onchange={e => commit({ showText: e.currentTarget.checked })} /> Human-readable text</label>
             </div>
         {:else if el.type === 'qr'}
-            <label class="row">
-                <span class="lbl">Data</span>
-                <textarea
-                    rows="2"
-                    value={el.data}
-                    onfocus={() => editor.beginTransform()}
-                    oninput={e => live({ data: e.currentTarget.value })}
-                    onblur={() => editor.endTransform()}
-                ></textarea>
-            </label>
+            <div class="group">
+                <span class="group-title">Data</span>
+                {@render content(el.id, true, 2)}
+            </div>
             <ResponsivePanel {editor} section="size" />
             <div class="row">
                 <span class="lbl">Error corr.</span>
@@ -521,16 +489,10 @@
                 </select>
             </div>
         {:else if el.type === 'datamatrix'}
-            <label class="row">
-                <span class="lbl">Data</span>
-                <textarea
-                    rows="2"
-                    value={el.data}
-                    onfocus={() => editor.beginTransform()}
-                    oninput={e => live({ data: e.currentTarget.value })}
-                    onblur={() => editor.endTransform()}
-                ></textarea>
-            </label>
+            <div class="group">
+                <span class="group-title">Data</span>
+                {@render content(el.id, true, 2)}
+            </div>
             <div class="row">
                 <span class="note" class:bad={dmError !== null}>
                     {dmError ?? `Symbol size ${dmSize}x${dmSize} modules · scans smaller than QR`}
@@ -717,11 +679,28 @@
         background: var(--panel);
         border-radius: 2px;
     }
-    .advanced,
-    .advanced-body {
-        display: contents;
+    /* Position, rotation, threshold and ink: collapsed at the end of the panel. */
+    .advanced {
+        display: block;
+        order: 10;
+        border-top: 1px solid var(--border);
+        padding-top: 8px;
     }
-    .advanced-toggle,
+    .advanced-toggle {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 36px;
+        background: var(--panel-2);
+    }
+    .advanced-body { display: none; }
+    .advanced.open .advanced-body {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding-top: 8px;
+    }
     .symbol-grid {
         display: none;
     }
@@ -741,11 +720,6 @@
         min-width: 64px;
         color: var(--muted);
         font-size: 13px;
-    }
-    textarea,
-    input[type='text'] {
-        flex: 1;
-        min-width: 120px;
     }
     input[type='number'] {
         width: 72px;
@@ -822,10 +796,44 @@
         opacity: 1;
         transform: translateY(0);
     }
-    .style-group {
+    .group {
         display: flex;
-        gap: 4px;
+        flex-direction: column;
+        gap: 8px;
+        padding-top: 10px;
+        border-top: 1px solid var(--border);
     }
+    .group-title {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+    }
+    .tool-row { gap: 10px; }
+    /* Joined buttons: one control, several choices. */
+    .seg-group {
+        display: inline-flex;
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    .seg-group > button {
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+        min-height: 32px;
+    }
+    .seg-group > button + button { border-left: 1px solid var(--border); }
+    .seg-group > button:hover { transform: none; }
+    .seg-group.wide { display: flex; }
+    .seg-group.wide > .seg { flex: 1; padding: 6px 8px; font-size: 13px; }
+    .seg-group > .seg.on {
+        background: var(--accent);
+        color: var(--accent-fg, #fff);
+    }
+    .knock { border: 1px solid var(--border); display: inline-flex; align-items: center; gap: 6px; }
+    .num { width: 72px; }
     .style-btn {
         min-width: 38px;
         padding: 6px 10px;
@@ -867,36 +875,10 @@
         min-width: 34px;
         padding: 6px 8px;
     }
-    .editable-row {
-        padding: 8px;
-        border: 1px dashed var(--accent);
-        border-radius: 2px;
-        background: color-mix(in srgb, var(--accent) 5%, transparent);
-    }
 
     @media (max-width: 859px) {
         .panel > .row.head { order: -10; }
-        .advanced {
-            display: block;
-            order: 10;
-            border-top: 1px solid var(--border);
-            padding-top: 8px;
-        }
-        .advanced-toggle {
-            display: flex;
-            width: 100%;
-            align-items: center;
-            justify-content: space-between;
-            min-height: 44px;
-            background: var(--panel-2);
-        }
-        .advanced-body { display: none; }
-        .advanced.open .advanced-body {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            padding-top: 8px;
-        }
+        .advanced-toggle { min-height: 44px; }
         .symbol-select { display: none; }
         .symbol-grid {
             display: grid;

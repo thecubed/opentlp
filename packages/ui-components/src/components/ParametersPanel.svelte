@@ -64,6 +64,12 @@
                             <input class="pdef" type="text" value={String(p.default ?? '')} placeholder="default" onchange={e => editor.updateParam(p.name, { default: e.currentTarget.value })} />
                         {/if}
                     </div>
+                    {#if p.type === 'text'}
+                        <label class="def-check" title="Let this field hold several lines">
+                            <input type="checkbox" checked={!!p.multiline} onchange={e => editor.updateParam(p.name, { multiline: e.currentTarget.checked || undefined })} />
+                            Multi-line
+                        </label>
+                    {/if}
                     {#if p.type === 'select'}
                         <input class="popts" type="text" value={(p.options ?? []).join(', ')} placeholder="options, comma-separated"
                             onchange={e => editor.updateParam(p.name, { options: e.currentTarget.value.split(',').map(s => s.trim()).filter(Boolean) })} />

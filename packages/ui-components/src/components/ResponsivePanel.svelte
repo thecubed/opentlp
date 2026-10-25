@@ -2,8 +2,8 @@
     /**
      * Responsive layout editor for the selected element — shown only in template
      * author mode. Lets the author pick an anchor and express each offset/size
-     * as px / mm / % / a safe expression, with clamps, auto-fit, and a parameter
-     * binding. The design's pixels stay the source of truth; entering a value
+     * as px / mm / % / a safe expression, with clamps. (Fields in content are
+     * edited in the content box itself.) The design's pixels stay the source of truth; entering a value
      * here converts back to pixels and moves the element, so the canvas always
      * shows exactly what the designed size will print.
      */
@@ -22,13 +22,12 @@
          * component (the px⇄unit math is shared) but are placed separately in
          * the properties panel so each sits with the thing it affects.
          */
-        section: 'position' | 'size';
+        section: 'position' | 'size' | 'limits';
     }
     let { editor, section }: Props = $props();
 
     const el = $derived(editor.selected);
     const a = $derived(editor.selectedAuthoring);
-    const meta = $derived(editor.templateMeta);
 
     const W = $derived(editor.design.widthPx);
     const H = $derived(editor.design.heightPx);
@@ -106,15 +105,6 @@
         return el ? sizeFieldsFor(el.type) : [];
     }
 
-    const contentField = $derived(el ? (el.type === 'text' ? 'text' : el.type === 'image' ? 'image' : 'data') : '');
-
-    function newParamAndBind(): void {
-        if (!el || !meta) return;
-        const n = meta.params.length + 1;
-        const name = `param${n}`;
-        editor.addParam({ name, label: `Parameter ${n}`, type: 'text', default: el.type === 'text' ? el.text : '' });
-        editor.bindField(el.id, name);
-    }
 </script>
 
 {#if el && a && section === 'position'}
@@ -131,16 +121,9 @@
         {@render dimRow(f, f === 'size' ? 'Size' : f === 'w' ? 'Width' : 'Height')}
     {/each}
 
-    {#if el.type === 'text'}
-        <div class="row">
-            <span class="lbl"></span>
-            <label class="check-row">
-                <input type="checkbox" checked={a.autofit ?? false} onchange={e => editor.setAutofit(el.id, e.currentTarget.checked)} />
-                Shrink to fit
-            </label>
-        </div>
-    {/if}
+{/if}
 
+{#if el && a && section === 'limits' && sizeFields().length > 0}
     <div class="row">
         <span class="lbl">Limits</span>
         <div class="clamps">
@@ -157,21 +140,6 @@
         </div>
     </div>
 
-    <!-- Parameter binding — only meaningful once this is a template. -->
-    {#if meta && contentField !== 'image'}
-        <div class="row">
-            <span class="lbl">{contentField === 'text' ? 'Text' : 'Data'}</span>
-            <select value={a.bind ?? ''} onchange={e => {
-                const v = e.currentTarget.value;
-                if (v === '__new') newParamAndBind();
-                else editor.bindField(el.id, v || undefined);
-            }}>
-                <option value="">Fixed (literal)</option>
-                {#each meta.params as p (p.name)}<option value={p.name}>Bound to “{p.label}”</option>{/each}
-                <option value="__new">＋ New parameter…</option>
-            </select>
-        </div>
-    {/if}
 {/if}
 
 {#snippet dimRow(field: Field, label: string)}
@@ -228,7 +196,6 @@
     .clamps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; min-width: 0; max-width: 100%; }
     .clamp { display: flex; min-width: 0; flex-direction: column; gap: 2px; font-size: 11px; color: var(--muted); }
     .clamp input { width: 100%; min-width: 0; box-sizing: border-box; }
-    .check-row { display: flex; align-items: center; gap: 6px; font-size: 13px; }
     @media (max-width: 420px) {
         .row { min-width: 0; }
         .lbl { flex: 0 0 100%; min-width: 0; }

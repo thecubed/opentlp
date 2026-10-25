@@ -8,7 +8,6 @@
     import { fromStore } from 'svelte/store';
     import { DEFAULT_PAPER_PROFILES, type UniversalPrintOptions, type UniversalPage, type PaperProfile } from 'universal-label-core';
     import type { LabelDesign } from 'universal-label-renderer';
-    import BatchPanel from './BatchPanel.svelte';
     import type { PrinterSession } from '../printer/session';
     import type { EditorStore } from '../stores/editor.svelte';
     import { globalSettings as settings, PRINTER_PROFILES } from '../stores/settings.svelte';
@@ -124,9 +123,12 @@
         }))
     );
 
-    /** Labels sent so far in the running print, and how many it has. */
-    let progress = $state<{ done: number; total: number } | undefined>(undefined);
+    /** Labels sent so far in the running print, shared with the batch list. */
+    const progress = $derived(editor.printProgress);
     let stopper: AbortController | undefined;
+    const batchMode = $derived(editor.printMode === 'batch');
+    const batchCount = $derived(editor.batchRows.length);
+    const perCopy = $derived(Number.isFinite(copies) ? Math.min(99, Math.max(1, Math.trunc(copies))) : 1);
 
     function printOptions(): UniversalPrintOptions {
         return {
@@ -162,10 +164,10 @@
                 const page = await rasterizeDesign(design, undefined, { inkChannels });
                 for (let i = 0; i < requestedCopies; i++) pages.push(page);
             }
-            progress = { done: 0, total: pages.length };
+            editor.printProgress = { done: 0, total: pages.length };
             const sent = await session.printBatch(pages, printOptions(), {
                 signal: stopper.signal,
-                onPage: (done, total) => { progress = { done, total }; }
+                onPage: (done, total) => { editor.printProgress = { done, total }; }
             });
             printedOk = true;
             if (sent < pages.length) printError = `Stopped after ${sent} of ${pages.length} labels.`;
@@ -174,14 +176,23 @@
             printError = err instanceof Error ? err.message : String(err);
         } finally {
             printing = false;
-            progress = undefined;
+            editor.printProgress = undefined;
             stopper = undefined;
         }
     }
 
     function print(): Promise<void> {
-        return printDesigns([editor.design]);
+        if (!batchMode) return printDesigns([editor.design]);
+        const designs = editor.batchRows.map(row => editor.designWith({ ...editor.params, ...row }));
+        return printDesigns(designs);
     }
+
+    const printLabel = $derived.by(() => {
+        if (printing) return progress && progress.total > 1 ? `Printing ${progress.done} of ${progress.total}…` : 'Printing…';
+        if (!batchMode) return `Print ${perCopy > 1 ? perCopy + ' copies' : 'label'}`;
+        const total = batchCount * perCopy;
+        return `Print ${total} label${total === 1 ? '' : 's'}${perCopy > 1 ? ` (${perCopy} of each)` : ''}`;
+    });
 
     function makeReportContext(printResult: 'sent' | 'failed'): PrintReportContext {
         const requestedCopies = Number.isFinite(copies)
@@ -358,22 +369,21 @@
                 <div class="hint">This printer does not expose adjustable continuous feed.</div>
             {/if}
         {/if}
-        <button
-            class="primary print"
-            disabled={snap.state !== 'connected' || printing}
-            onclick={print}
-        >
-            {printing ? (progress && progress.total > 1 ? `Printing ${progress.done} of ${progress.total}…` : 'Printing…') : `Print ${copies > 1 ? copies + ' copies' : 'label'}`}
-        </button>
-        <BatchPanel
-            {editor}
-            {printing}
-            {progress}
-            {copies}
-            canPrint={snap.state === 'connected'}
-            onprint={printDesigns}
-            onstop={() => stopper?.abort()}
-        />
+        <div class="print-row">
+            <button
+                class="primary print"
+                disabled={snap.state !== 'connected' || printing || (batchMode && batchCount === 0)}
+                onclick={print}
+            >
+                {printLabel}
+            </button>
+            {#if printing && progress && progress.total > 1}
+                <button class="stop" onclick={() => stopper?.abort()}>Stop</button>
+            {/if}
+        </div>
+        {#if printing && progress && progress.total > 1}
+            <progress class="bar" max={progress.total} value={progress.done}></progress>
+        {/if}
         {#if printError}
             <div class="error">{printError}</div>
             {#if onreport}
@@ -434,7 +444,11 @@
     .print {
         font-size: 16px;
         padding: 12px;
+        flex: 1;
     }
+    .print-row { display: flex; gap: 8px; }
+    .stop { padding-inline: 16px; }
+    .bar { width: 100%; }
     .hint {
         color: var(--muted);
     }

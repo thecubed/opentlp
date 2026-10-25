@@ -25,7 +25,8 @@ import {
     anchorFx, anchorFy, anchorParts, makeAnchor,
     type Anchor, type AnchorH, type AnchorV, type Dim, type RefBox
 } from 'universal-label-renderer';
-import { parseExpr, isValidExpr } from 'universal-label-renderer';
+import { parseExpr, isValidExpr, compileText, textBindingSource } from 'universal-label-renderer';
+import { fieldNameFor } from '../lib/field-text';
 import { History } from 'universal-label-renderer';
 import { LabelLibrary, type DesignOrigin, type SavedLabel } from 'universal-label-renderer';
 import {
@@ -206,6 +207,10 @@ export class EditorStore {
     printFeedAfterMm = $state<number | undefined>(undefined);
     printFeedMode = $state<'default' | 'balanced' | 'minimum' | 'custom'>('default');
     showAdvancedFeedingPreview = $state(false);
+    /** Print view: one label, or the template once per batch row. */
+    printMode = $state<'single' | 'batch'>('single');
+    /** Labels sent so far by the running print, for progress in any panel. */
+    printProgress = $state<{ done: number; total: number } | undefined>(undefined);
 
     systemFonts = $state<string[]>([...DEFAULT_SYSTEM_FONTS]);
     systemFontsLoaded = $state(false);
@@ -1189,6 +1194,35 @@ export class EditorStore {
         this.template = { ...this.template, params: this.template.params.map(p => (p.name === name ? { ...p, ...patch } : p)) };
         if ('default' in patch) this.params = { ...this.params, [name]: patch.default };
     }
+    /**
+     * The editable source of an element's content: its text, or a code's data,
+     * with field references as `{name}`. Literal braces read as `{{` / `}}`.
+     */
+    contentSource(id: string): string {
+        const te = this.template.elements.find(e => e.id === id);
+        if (!te) return '';
+        if (te.type === 'text') return textBindingSource(te.text);
+        if (te.type === 'barcode' || te.type === 'qr' || te.type === 'datamatrix') return textBindingSource(te.data);
+        return '';
+    }
+
+    /** Set an element's content from source text; `{name}` becomes a field reference. */
+    setContentSource(id: string, source: string, history = false): void {
+        this.updateEl(id, e => {
+            if (e.type === 'text') return { ...e, text: compileText(source) };
+            if (e.type === 'barcode' || e.type === 'qr' || e.type === 'datamatrix') return { ...e, data: compileText(source) };
+            return e;
+        }, history);
+    }
+
+    /** Add a text field named after its label; returns its name for `{name}`. */
+    addField(label: string, defaultValue: string, multiline = false): string {
+        const cleanLabel = label.trim() || `Field ${this.template.params.length + 1}`;
+        const name = fieldNameFor(cleanLabel, this.template.params.map(p => p.name));
+        this.addParam({ name, label: cleanLabel, type: 'text', default: defaultValue, ...(multiline ? { multiline: true } : {}) });
+        return name;
+    }
+
     removeParam(name: string): void {
         this.template = {
             ...this.template,
