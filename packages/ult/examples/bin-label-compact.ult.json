@@ -1,0 +1,181 @@
+{
+  "version": 1,
+  "kind": "label-template",
+  "id": "example-bin-label-compact",
+  "name": "Bin label (compact)",
+  "author": "ULT contributors",
+  "description": "The bin label without the frame or a set length: the tape is only as long as the longer line, to save tape.",
+  "license": "CC0-1.0",
+  "tags": [
+    "storage",
+    "bins",
+    "workshop",
+    "organising"
+  ],
+  "revision": 1,
+  "params": [
+    {
+      "name": "title",
+      "label": "Category",
+      "type": "text",
+      "default": "SCREWS"
+    },
+    {
+      "name": "detail",
+      "label": "Detail",
+      "type": "text",
+      "default": "M3 × 10 mm"
+    }
+  ],
+  "elements": [
+    {
+      "type": "text",
+      "id": "title",
+      "place": {
+        "anchor": "tl",
+        "origin": "tl",
+        "dx": {
+          "u": "mm",
+          "v": 2
+        },
+        "dy": {
+          "u": "%",
+          "v": 5,
+          "of": "h"
+        },
+        "size": {
+          "e": {
+            "t": "call",
+            "callee": "min",
+            "args": [
+              {
+                "t": "binary",
+                "op": "*",
+                "left": {
+                  "t": "ident",
+                  "name": "H"
+                },
+                "right": {
+                  "t": "num",
+                  "v": 0.54
+                }
+              },
+              {
+                "t": "binary",
+                "op": "*",
+                "left": {
+                  "t": "num",
+                  "v": 8
+                },
+                "right": {
+                  "t": "ident",
+                  "name": "mm"
+                }
+              }
+            ]
+          },
+          "src": "min(H * 0.54, 8 * mm)"
+        },
+        "min": {
+          "size": 6
+        }
+      },
+      "text": {
+        "parts": [
+          {
+            "e": {
+              "t": "ident",
+              "name": "title"
+            }
+          }
+        ]
+      },
+      "font": "bitmap",
+      "bitmapFont": "fixed",
+      "fontFamily": "sans-serif",
+      "bold": true,
+      "italic": false,
+      "underline": false,
+      "align": "left"
+    },
+    {
+      "type": "text",
+      "id": "detail",
+      "place": {
+        "relTo": "title",
+        "anchor": "bl",
+        "origin": "tl",
+        "dx": 0,
+        "dy": {
+          "u": "%",
+          "v": 4,
+          "of": "h"
+        },
+        "size": {
+          "e": {
+            "t": "call",
+            "callee": "min",
+            "args": [
+              {
+                "t": "binary",
+                "op": "*",
+                "left": {
+                  "t": "ident",
+                  "name": "H"
+                },
+                "right": {
+                  "t": "num",
+                  "v": 0.26
+                }
+              },
+              {
+                "t": "binary",
+                "op": "*",
+                "left": {
+                  "t": "num",
+                  "v": 4
+                },
+                "right": {
+                  "t": "ident",
+                  "name": "mm"
+                }
+              }
+            ]
+          },
+          "src": "min(H * 0.26, 4 * mm)"
+        },
+        "min": {
+          "size": 5
+        }
+      },
+      "text": {
+        "parts": [
+          {
+            "e": {
+              "t": "ident",
+              "name": "detail"
+            }
+          }
+        ]
+      },
+      "font": "bitmap",
+      "bitmapFont": "fixed",
+      "fontFamily": "sans-serif",
+      "bold": false,
+      "italic": false,
+      "underline": false,
+      "align": "left"
+    }
+  ],
+  "adaptivity": {
+    "designedFor": {
+      "tapeWidthMm": 19,
+      "labelLengthMm": 40
+    },
+    "minTapeWidthMm": 12,
+    "maxTapeWidthMm": 24,
+    "autoLength": true,
+    "autoLengthPadMm": 2
+  },
+  "threshold": 128
+}

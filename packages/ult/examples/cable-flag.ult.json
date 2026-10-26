@@ -1,0 +1,1284 @@
+{
+  "version": 1,
+  "kind": "label-template",
+  "id": "example-cable-flag",
+  "name": "Cable flag",
+  "author": "ULT contributors",
+  "description": "Folds around a cable into a flag readable from both sides: the text twice, a blank band in the middle that wraps the cable, and dashed fold lines at its edges. Press the two halves together. The band follows the cable diameter; the flag length is a preset.",
+  "license": "CC0-1.0",
+  "tags": [
+    "cables",
+    "network",
+    "electrical"
+  ],
+  "revision": 1,
+  "params": [
+    {
+      "name": "text",
+      "label": "Text",
+      "type": "text",
+      "default": "PNL-2F-1A"
+    },
+    {
+      "name": "cable",
+      "label": "Cable diameter (mm)",
+      "type": "select",
+      "default": "6",
+      "options": [
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "10",
+        "12",
+        "15"
+      ],
+      "help": "Sets the length: the label wraps exactly once around a cable this thick."
+    },
+    {
+      "name": "flag",
+      "label": "Flag length (mm)",
+      "type": "select",
+      "default": "25",
+      "options": [
+        "20",
+        "25",
+        "30",
+        "40"
+      ]
+    }
+  ],
+  "elements": [
+    {
+      "type": "shape",
+      "id": "frameA",
+      "shape": "rect",
+      "stroke": 2,
+      "fill": false,
+      "radius": {
+        "u": "mm",
+        "v": 1
+      },
+      "locked": true,
+      "place": {
+        "anchor": "l",
+        "origin": "l",
+        "dx": {
+          "e": {
+            "t": "binary",
+            "op": "*",
+            "left": {
+              "t": "binary",
+              "op": "+",
+              "left": {
+                "t": "num",
+                "v": 0
+              },
+              "right": {
+                "t": "num",
+                "v": 0.5
+              }
+            },
+            "right": {
+              "t": "ident",
+              "name": "mm"
+            }
+          },
+          "src": "(0 + 0.5) * mm"
+        },
+        "dy": 0,
+        "w": {
+          "e": {
+            "t": "binary",
+            "op": "*",
+            "left": {
+              "t": "binary",
+              "op": "-",
+              "left": {
+                "t": "call",
+                "callee": "min",
+                "args": [
+                  {
+                    "t": "call",
+                    "callee": "number",
+                    "args": [
+                      {
+                        "t": "ident",
+                        "name": "flag"
+                      }
+                    ]
+                  },
+                  {
+                    "t": "binary",
+                    "op": "/",
+                    "left": {
+                      "t": "binary",
+                      "op": "-",
+                      "left": {
+                        "t": "ident",
+                        "name": "Wmm"
+                      },
+                      "right": {
+                        "t": "call",
+                        "callee": "min",
+                        "args": [
+                          {
+                            "t": "binary",
+                            "op": "*",
+                            "left": {
+                              "t": "num",
+                              "v": 3.1416
+                            },
+                            "right": {
+                              "t": "call",
+                              "callee": "number",
+                              "args": [
+                                {
+                                  "t": "ident",
+                                  "name": "cable"
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "t": "binary",
+                            "op": "*",
+                            "left": {
+                              "t": "ident",
+                              "name": "Wmm"
+                            },
+                            "right": {
+                              "t": "num",
+                              "v": 0.6
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "right": {
+                      "t": "num",
+                      "v": 2
+                    }
+                  }
+                ]
+              },
+              "right": {
+                "t": "num",
+                "v": 1
+              }
+            },
+            "right": {
+              "t": "ident",
+              "name": "mm"
+            }
+          },
+          "src": "(min(number(flag), (Wmm - min(3.1416 * number(cable), Wmm * 0.6)) / 2) - 1) * mm"
+        },
+        "h": {
+          "e": {
+            "t": "binary",
+            "op": "-",
+            "left": {
+              "t": "ident",
+              "name": "H"
+            },
+            "right": {
+              "t": "binary",
+              "op": "*",
+              "left": {
+                "t": "num",
+                "v": 1
+              },
+              "right": {
+                "t": "ident",
+                "name": "mm"
+              }
+            }
+          },
+          "src": "H - 1 * mm"
+        }
+      }
+    },
+    {
+      "type": "text",
+      "id": "textA",
+      "place": {
+        "anchor": "l",
+        "origin": "c",
+        "dx": {
+          "e": {
+            "t": "binary",
+            "op": "*",
+            "left": {
+              "t": "binary",
+              "op": "+",
+              "left": {
+                "t": "num",
+                "v": 0
+              },
+              "right": {
+                "t": "binary",
+                "op": "/",
+                "left": {
+                  "t": "call",
+                  "callee": "min",
+                  "args": [
+                    {
+                      "t": "call",
+                      "callee": "number",
+                      "args": [
+                        {
+                          "t": "ident",
+                          "name": "flag"
+                        }
+                      ]
+                    },
+                    {
+                      "t": "binary",
+                      "op": "/",
+                      "left": {
+                        "t": "binary",
+                        "op": "-",
+                        "left": {
+                          "t": "ident",
+                          "name": "Wmm"
+                        },
+                        "right": {
+                          "t": "call",
+                          "callee": "min",
+                          "args": [
+                            {
+                              "t": "binary",
+                              "op": "*",
+                              "left": {
+                                "t": "num",
+                                "v": 3.1416
+                              },
+                              "right": {
+                                "t": "call",
+                                "callee": "number",
+                                "args": [
+                                  {
+                                    "t": "ident",
+                                    "name": "cable"
+                                  }
+                                ]
+                              }
+                            },
+                            {
+                              "t": "binary",
+                              "op": "*",
+                              "left": {
+                                "t": "ident",
+                                "name": "Wmm"
+                              },
+                              "right": {
+                                "t": "num",
+                                "v": 0.6
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "right": {
+                        "t": "num",
+                        "v": 2
+                      }
+                    }
+                  ]
+                },
+                "right": {
+                  "t": "num",
+                  "v": 2
+                }
+              }
+            },
+            "right": {
+              "t": "ident",
+              "name": "mm"
+            }
+          },
+          "src": "(0 + min(number(flag), (Wmm - min(3.1416 * number(cable), Wmm * 0.6)) / 2) / 2) * mm"
+        },
+        "dy": 0,
+        "size": {
+          "u": "%",
+          "v": 45,
+          "of": "h"
+        },
+        "w": {
+          "e": {
+            "t": "binary",
+            "op": "*",
+            "left": {
+              "t": "binary",
+              "op": "-",
+              "left": {
+                "t": "call",
+                "callee": "min",
+                "args": [
+                  {
+                    "t": "call",
+                    "callee": "number",
+                    "args": [
+                      {
+                        "t": "ident",
+                        "name": "flag"
+                      }
+                    ]
+                  },
+                  {
+                    "t": "binary",
+                    "op": "/",
+                    "left": {
+                      "t": "binary",
+                      "op": "-",
+                      "left": {
+                        "t": "ident",
+                        "name": "Wmm"
+                      },
+                      "right": {
+                        "t": "call",
+                        "callee": "min",
+                        "args": [
+                          {
+                            "t": "binary",
+                            "op": "*",
+                            "left": {
+                              "t": "num",
+                              "v": 3.1416
+                            },
+                            "right": {
+                              "t": "call",
+                              "callee": "number",
+                              "args": [
+                                {
+                                  "t": "ident",
+                                  "name": "cable"
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "t": "binary",
+                            "op": "*",
+                            "left": {
+                              "t": "ident",
+                              "name": "Wmm"
+                            },
+                            "right": {
+                              "t": "num",
+                              "v": 0.6
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "right": {
+                      "t": "num",
+                      "v": 2
+                    }
+                  }
+                ]
+              },
+              "right": {
+                "t": "num",
+                "v": 4
+              }
+            },
+            "right": {
+              "t": "ident",
+              "name": "mm"
+            }
+          },
+          "src": "(min(number(flag), (Wmm - min(3.1416 * number(cable), Wmm * 0.6)) / 2) - 4) * mm"
+        },
+        "min": {
+          "size": 5
+        }
+      },
+      "text": {
+        "parts": [
+          {
+            "e": {
+              "t": "ident",
+              "name": "text"
+            }
+          }
+        ]
+      },
+      "font": "bitmap",
+      "bitmapFont": "fixed",
+      "fontFamily": "sans-serif",
+      "bold": true,
+      "italic": false,
+      "underline": false,
+      "align": "center",
+      "autofit": true,
+      "locked": true
+    },
+    {
+      "type": "shape",
+      "id": "foldA",
+      "shape": "line",
+      "stroke": 1,
+      "fill": false,
+      "dash": 6,
+      "locked": true,
+      "place": {
+        "anchor": "l",
+        "origin": "c",
+        "dx": {
+          "e": {
+            "t": "binary",
+            "op": "*",
+            "left": {
+              "t": "call",
+              "callee": "min",
+              "args": [
+                {
+                  "t": "call",
+                  "callee": "number",
+                  "args": [
+                    {
+                      "t": "ident",
+                      "name": "flag"
+                    }
+                  ]
+                },
+                {
+                  "t": "binary",
+                  "op": "/",
+                  "left": {
+                    "t": "binary",
+                    "op": "-",
+                    "left": {
+                      "t": "ident",
+                      "name": "Wmm"
+                    },
+                    "right": {
+                      "t": "call",
+                      "callee": "min",
+                      "args": [
+                        {
+                          "t": "binary",
+                          "op": "*",
+                          "left": {
+                            "t": "num",
+                            "v": 3.1416
+                          },
+                          "right": {
+                            "t": "call",
+                            "callee": "number",
+                            "args": [
+                              {
+                                "t": "ident",
+                                "name": "cable"
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "t": "binary",
+                          "op": "*",
+                          "left": {
+                            "t": "ident",
+                            "name": "Wmm"
+                          },
+                          "right": {
+                            "t": "num",
+                            "v": 0.6
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "right": {
+                    "t": "num",
+                    "v": 2
+                  }
+                }
+              ]
+            },
+            "right": {
+              "t": "ident",
+              "name": "mm"
+            }
+          },
+          "src": "min(number(flag), (Wmm - min(3.1416 * number(cable), Wmm * 0.6)) / 2) * mm"
+        },
+        "dy": 0,
+        "w": 2,
+        "h": {
+          "e": {
+            "t": "binary",
+            "op": "-",
+            "left": {
+              "t": "ident",
+              "name": "H"
+            },
+            "right": {
+              "t": "binary",
+              "op": "*",
+              "left": {
+                "t": "num",
+                "v": 1
+              },
+              "right": {
+                "t": "ident",
+                "name": "mm"
+              }
+            }
+          },
+          "src": "H - 1 * mm"
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "id": "foldB",
+      "shape": "line",
+      "stroke": 1,
+      "fill": false,
+      "dash": 6,
+      "locked": true,
+      "place": {
+        "anchor": "l",
+        "origin": "c",
+        "dx": {
+          "e": {
+            "t": "binary",
+            "op": "*",
+            "left": {
+              "t": "binary",
+              "op": "+",
+              "left": {
+                "t": "call",
+                "callee": "min",
+                "args": [
+                  {
+                    "t": "call",
+                    "callee": "number",
+                    "args": [
+                      {
+                        "t": "ident",
+                        "name": "flag"
+                      }
+                    ]
+                  },
+                  {
+                    "t": "binary",
+                    "op": "/",
+                    "left": {
+                      "t": "binary",
+                      "op": "-",
+                      "left": {
+                        "t": "ident",
+                        "name": "Wmm"
+                      },
+                      "right": {
+                        "t": "call",
+                        "callee": "min",
+                        "args": [
+                          {
+                            "t": "binary",
+                            "op": "*",
+                            "left": {
+                              "t": "num",
+                              "v": 3.1416
+                            },
+                            "right": {
+                              "t": "call",
+                              "callee": "number",
+                              "args": [
+                                {
+                                  "t": "ident",
+                                  "name": "cable"
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "t": "binary",
+                            "op": "*",
+                            "left": {
+                              "t": "ident",
+                              "name": "Wmm"
+                            },
+                            "right": {
+                              "t": "num",
+                              "v": 0.6
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "right": {
+                      "t": "num",
+                      "v": 2
+                    }
+                  }
+                ]
+              },
+              "right": {
+                "t": "call",
+                "callee": "min",
+                "args": [
+                  {
+                    "t": "binary",
+                    "op": "*",
+                    "left": {
+                      "t": "num",
+                      "v": 3.1416
+                    },
+                    "right": {
+                      "t": "call",
+                      "callee": "number",
+                      "args": [
+                        {
+                          "t": "ident",
+                          "name": "cable"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "t": "binary",
+                    "op": "*",
+                    "left": {
+                      "t": "ident",
+                      "name": "Wmm"
+                    },
+                    "right": {
+                      "t": "num",
+                      "v": 0.6
+                    }
+                  }
+                ]
+              }
+            },
+            "right": {
+              "t": "ident",
+              "name": "mm"
+            }
+          },
+          "src": "(min(number(flag), (Wmm - min(3.1416 * number(cable), Wmm * 0.6)) / 2) + min(3.1416 * number(cable), Wmm * 0.6)) * mm"
+        },
+        "dy": 0,
+        "w": 2,
+        "h": {
+          "e": {
+            "t": "binary",
+            "op": "-",
+            "left": {
+              "t": "ident",
+              "name": "H"
+            },
+            "right": {
+              "t": "binary",
+              "op": "*",
+              "left": {
+                "t": "num",
+                "v": 1
+              },
+              "right": {
+                "t": "ident",
+                "name": "mm"
+              }
+            }
+          },
+          "src": "H - 1 * mm"
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "id": "frameB",
+      "shape": "rect",
+      "stroke": 2,
+      "fill": false,
+      "radius": {
+        "u": "mm",
+        "v": 1
+      },
+      "locked": true,
+      "place": {
+        "anchor": "l",
+        "origin": "l",
+        "dx": {
+          "e": {
+            "t": "binary",
+            "op": "*",
+            "left": {
+              "t": "binary",
+              "op": "+",
+              "left": {
+                "t": "binary",
+                "op": "+",
+                "left": {
+                  "t": "call",
+                  "callee": "min",
+                  "args": [
+                    {
+                      "t": "call",
+                      "callee": "number",
+                      "args": [
+                        {
+                          "t": "ident",
+                          "name": "flag"
+                        }
+                      ]
+                    },
+                    {
+                      "t": "binary",
+                      "op": "/",
+                      "left": {
+                        "t": "binary",
+                        "op": "-",
+                        "left": {
+                          "t": "ident",
+                          "name": "Wmm"
+                        },
+                        "right": {
+                          "t": "call",
+                          "callee": "min",
+                          "args": [
+                            {
+                              "t": "binary",
+                              "op": "*",
+                              "left": {
+                                "t": "num",
+                                "v": 3.1416
+                              },
+                              "right": {
+                                "t": "call",
+                                "callee": "number",
+                                "args": [
+                                  {
+                                    "t": "ident",
+                                    "name": "cable"
+                                  }
+                                ]
+                              }
+                            },
+                            {
+                              "t": "binary",
+                              "op": "*",
+                              "left": {
+                                "t": "ident",
+                                "name": "Wmm"
+                              },
+                              "right": {
+                                "t": "num",
+                                "v": 0.6
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "right": {
+                        "t": "num",
+                        "v": 2
+                      }
+                    }
+                  ]
+                },
+                "right": {
+                  "t": "call",
+                  "callee": "min",
+                  "args": [
+                    {
+                      "t": "binary",
+                      "op": "*",
+                      "left": {
+                        "t": "num",
+                        "v": 3.1416
+                      },
+                      "right": {
+                        "t": "call",
+                        "callee": "number",
+                        "args": [
+                          {
+                            "t": "ident",
+                            "name": "cable"
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "t": "binary",
+                      "op": "*",
+                      "left": {
+                        "t": "ident",
+                        "name": "Wmm"
+                      },
+                      "right": {
+                        "t": "num",
+                        "v": 0.6
+                      }
+                    }
+                  ]
+                }
+              },
+              "right": {
+                "t": "num",
+                "v": 0.5
+              }
+            },
+            "right": {
+              "t": "ident",
+              "name": "mm"
+            }
+          },
+          "src": "((min(number(flag), (Wmm - min(3.1416 * number(cable), Wmm * 0.6)) / 2) + min(3.1416 * number(cable), Wmm * 0.6)) + 0.5) * mm"
+        },
+        "dy": 0,
+        "w": {
+          "e": {
+            "t": "binary",
+            "op": "*",
+            "left": {
+              "t": "binary",
+              "op": "-",
+              "left": {
+                "t": "call",
+                "callee": "min",
+                "args": [
+                  {
+                    "t": "call",
+                    "callee": "number",
+                    "args": [
+                      {
+                        "t": "ident",
+                        "name": "flag"
+                      }
+                    ]
+                  },
+                  {
+                    "t": "binary",
+                    "op": "/",
+                    "left": {
+                      "t": "binary",
+                      "op": "-",
+                      "left": {
+                        "t": "ident",
+                        "name": "Wmm"
+                      },
+                      "right": {
+                        "t": "call",
+                        "callee": "min",
+                        "args": [
+                          {
+                            "t": "binary",
+                            "op": "*",
+                            "left": {
+                              "t": "num",
+                              "v": 3.1416
+                            },
+                            "right": {
+                              "t": "call",
+                              "callee": "number",
+                              "args": [
+                                {
+                                  "t": "ident",
+                                  "name": "cable"
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "t": "binary",
+                            "op": "*",
+                            "left": {
+                              "t": "ident",
+                              "name": "Wmm"
+                            },
+                            "right": {
+                              "t": "num",
+                              "v": 0.6
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "right": {
+                      "t": "num",
+                      "v": 2
+                    }
+                  }
+                ]
+              },
+              "right": {
+                "t": "num",
+                "v": 1
+              }
+            },
+            "right": {
+              "t": "ident",
+              "name": "mm"
+            }
+          },
+          "src": "(min(number(flag), (Wmm - min(3.1416 * number(cable), Wmm * 0.6)) / 2) - 1) * mm"
+        },
+        "h": {
+          "e": {
+            "t": "binary",
+            "op": "-",
+            "left": {
+              "t": "ident",
+              "name": "H"
+            },
+            "right": {
+              "t": "binary",
+              "op": "*",
+              "left": {
+                "t": "num",
+                "v": 1
+              },
+              "right": {
+                "t": "ident",
+                "name": "mm"
+              }
+            }
+          },
+          "src": "H - 1 * mm"
+        }
+      }
+    },
+    {
+      "type": "text",
+      "id": "textB",
+      "place": {
+        "anchor": "l",
+        "origin": "c",
+        "dx": {
+          "e": {
+            "t": "binary",
+            "op": "*",
+            "left": {
+              "t": "binary",
+              "op": "+",
+              "left": {
+                "t": "binary",
+                "op": "+",
+                "left": {
+                  "t": "call",
+                  "callee": "min",
+                  "args": [
+                    {
+                      "t": "call",
+                      "callee": "number",
+                      "args": [
+                        {
+                          "t": "ident",
+                          "name": "flag"
+                        }
+                      ]
+                    },
+                    {
+                      "t": "binary",
+                      "op": "/",
+                      "left": {
+                        "t": "binary",
+                        "op": "-",
+                        "left": {
+                          "t": "ident",
+                          "name": "Wmm"
+                        },
+                        "right": {
+                          "t": "call",
+                          "callee": "min",
+                          "args": [
+                            {
+                              "t": "binary",
+                              "op": "*",
+                              "left": {
+                                "t": "num",
+                                "v": 3.1416
+                              },
+                              "right": {
+                                "t": "call",
+                                "callee": "number",
+                                "args": [
+                                  {
+                                    "t": "ident",
+                                    "name": "cable"
+                                  }
+                                ]
+                              }
+                            },
+                            {
+                              "t": "binary",
+                              "op": "*",
+                              "left": {
+                                "t": "ident",
+                                "name": "Wmm"
+                              },
+                              "right": {
+                                "t": "num",
+                                "v": 0.6
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "right": {
+                        "t": "num",
+                        "v": 2
+                      }
+                    }
+                  ]
+                },
+                "right": {
+                  "t": "call",
+                  "callee": "min",
+                  "args": [
+                    {
+                      "t": "binary",
+                      "op": "*",
+                      "left": {
+                        "t": "num",
+                        "v": 3.1416
+                      },
+                      "right": {
+                        "t": "call",
+                        "callee": "number",
+                        "args": [
+                          {
+                            "t": "ident",
+                            "name": "cable"
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "t": "binary",
+                      "op": "*",
+                      "left": {
+                        "t": "ident",
+                        "name": "Wmm"
+                      },
+                      "right": {
+                        "t": "num",
+                        "v": 0.6
+                      }
+                    }
+                  ]
+                }
+              },
+              "right": {
+                "t": "binary",
+                "op": "/",
+                "left": {
+                  "t": "call",
+                  "callee": "min",
+                  "args": [
+                    {
+                      "t": "call",
+                      "callee": "number",
+                      "args": [
+                        {
+                          "t": "ident",
+                          "name": "flag"
+                        }
+                      ]
+                    },
+                    {
+                      "t": "binary",
+                      "op": "/",
+                      "left": {
+                        "t": "binary",
+                        "op": "-",
+                        "left": {
+                          "t": "ident",
+                          "name": "Wmm"
+                        },
+                        "right": {
+                          "t": "call",
+                          "callee": "min",
+                          "args": [
+                            {
+                              "t": "binary",
+                              "op": "*",
+                              "left": {
+                                "t": "num",
+                                "v": 3.1416
+                              },
+                              "right": {
+                                "t": "call",
+                                "callee": "number",
+                                "args": [
+                                  {
+                                    "t": "ident",
+                                    "name": "cable"
+                                  }
+                                ]
+                              }
+                            },
+                            {
+                              "t": "binary",
+                              "op": "*",
+                              "left": {
+                                "t": "ident",
+                                "name": "Wmm"
+                              },
+                              "right": {
+                                "t": "num",
+                                "v": 0.6
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "right": {
+                        "t": "num",
+                        "v": 2
+                      }
+                    }
+                  ]
+                },
+                "right": {
+                  "t": "num",
+                  "v": 2
+                }
+              }
+            },
+            "right": {
+              "t": "ident",
+              "name": "mm"
+            }
+          },
+          "src": "((min(number(flag), (Wmm - min(3.1416 * number(cable), Wmm * 0.6)) / 2) + min(3.1416 * number(cable), Wmm * 0.6)) + min(number(flag), (Wmm - min(3.1416 * number(cable), Wmm * 0.6)) / 2) / 2) * mm"
+        },
+        "dy": 0,
+        "size": {
+          "u": "%",
+          "v": 45,
+          "of": "h"
+        },
+        "w": {
+          "e": {
+            "t": "binary",
+            "op": "*",
+            "left": {
+              "t": "binary",
+              "op": "-",
+              "left": {
+                "t": "call",
+                "callee": "min",
+                "args": [
+                  {
+                    "t": "call",
+                    "callee": "number",
+                    "args": [
+                      {
+                        "t": "ident",
+                        "name": "flag"
+                      }
+                    ]
+                  },
+                  {
+                    "t": "binary",
+                    "op": "/",
+                    "left": {
+                      "t": "binary",
+                      "op": "-",
+                      "left": {
+                        "t": "ident",
+                        "name": "Wmm"
+                      },
+                      "right": {
+                        "t": "call",
+                        "callee": "min",
+                        "args": [
+                          {
+                            "t": "binary",
+                            "op": "*",
+                            "left": {
+                              "t": "num",
+                              "v": 3.1416
+                            },
+                            "right": {
+                              "t": "call",
+                              "callee": "number",
+                              "args": [
+                                {
+                                  "t": "ident",
+                                  "name": "cable"
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "t": "binary",
+                            "op": "*",
+                            "left": {
+                              "t": "ident",
+                              "name": "Wmm"
+                            },
+                            "right": {
+                              "t": "num",
+                              "v": 0.6
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "right": {
+                      "t": "num",
+                      "v": 2
+                    }
+                  }
+                ]
+              },
+              "right": {
+                "t": "num",
+                "v": 4
+              }
+            },
+            "right": {
+              "t": "ident",
+              "name": "mm"
+            }
+          },
+          "src": "(min(number(flag), (Wmm - min(3.1416 * number(cable), Wmm * 0.6)) / 2) - 4) * mm"
+        },
+        "min": {
+          "size": 5
+        }
+      },
+      "text": {
+        "parts": [
+          {
+            "e": {
+              "t": "ident",
+              "name": "text"
+            }
+          }
+        ]
+      },
+      "font": "bitmap",
+      "bitmapFont": "fixed",
+      "fontFamily": "sans-serif",
+      "bold": true,
+      "italic": false,
+      "underline": false,
+      "align": "center",
+      "autofit": true,
+      "locked": true
+    }
+  ],
+  "adaptivity": {
+    "designedFor": {
+      "tapeWidthMm": 12,
+      "labelLengthMm": 130
+    },
+    "minTapeWidthMm": 9,
+    "maxTapeWidthMm": 24,
+    "autoLength": true,
+    "autoLengthPadMm": 0.5
+  },
+  "threshold": 128
+}

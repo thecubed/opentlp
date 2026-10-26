@@ -14,6 +14,16 @@ import { parseTemplate, serializeTemplate, type ParseResult } from '../template/
 const STORAGE_KEY = 'blewebler2.labels.v1';
 /** Set after the bundled starter library has been installed once. */
 const STARTERS_KEY = 'blewebler2.labels.starters.v1';
+/** Starter ids already offered, so new releases can add starters without restoring deleted ones. */
+const STARTERS_SEEN_KEY = 'blewebler2.labels.starters.seen.v1';
+/**
+ * The starters that shipped before {@link STARTERS_SEEN_KEY} existed. An install
+ * that only has the old one-shot flag has been offered exactly these.
+ */
+const LEGACY_STARTER_IDS = [
+    'example-asset-tag', 'example-barcode-product', 'example-hazard-label', 'example-name-badge',
+    'example-price-tag', 'example-qr-url-card', 'example-retail-price-tag', 'example-spine-label',
+];
 
 export interface SavedLabel {
     template: LabelTemplate;
@@ -134,13 +144,14 @@ export class LabelLibrary {
      * resurrected on the next launch.
      */
     installDefaults(templates: readonly LabelTemplate[]): void {
-        if (this.backend.getItem(STARTERS_KEY)) return;
-
+        const seen = this.offeredStarters();
         const current = this.read(STORAGE_KEY);
         const existingIds = new Set(current.map(entry => entry.template.id));
         const installedAt = new Date().toISOString();
+        // Each starter is offered once: one the user deleted stays deleted, and
+        // one added in a later release still arrives.
         const additions = templates
-            .filter(template => !existingIds.has(template.id))
+            .filter(template => !seen.has(template.id) && !existingIds.has(template.id))
             .map(template => ({
                 template,
                 origin: { kind: 'bundled', collection: 'starter' },
@@ -148,7 +159,20 @@ export class LabelLibrary {
             } satisfies SavedLabel));
 
         if (additions.length > 0) this.write([...current, ...additions]);
+        for (const template of templates) seen.add(template.id);
+        this.backend.setItem(STARTERS_SEEN_KEY, JSON.stringify([...seen]));
         this.backend.setItem(STARTERS_KEY, '1');
+    }
+
+    private offeredStarters(): Set<string> {
+        const raw = this.backend.getItem(STARTERS_SEEN_KEY);
+        if (raw) {
+            try {
+                const ids: unknown = JSON.parse(raw);
+                if (Array.isArray(ids)) return new Set(ids.filter((id): id is string => typeof id === 'string'));
+            } catch { /* fall through to the legacy flag */ }
+        }
+        return new Set(this.backend.getItem(STARTERS_KEY) ? LEGACY_STARTER_IDS : []);
     }
 
     /** Validated entries under one key, unsorted. */

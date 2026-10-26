@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "kind": "label-template",
+  "id": "example-quick-text",
+  "name": "Quick text",
+  "author": "ULT contributors",
+  "description": "Just the words: type, print. Shows AUTO-LENGTH with a MULTI-LINE field — press Enter for a second line, and the text shrinks to fit the tape height; the label is exactly as long as the text.",
+  "license": "CC0-1.0",
+  "tags": [
+    "basic",
+    "text",
+    "quick"
+  ],
+  "revision": 1,
+  "params": [
+    {
+      "name": "text",
+      "label": "Text",
+      "type": "text",
+      "default": "Label",
+      "multiline": true
+    }
+  ],
+  "elements": [
+    {
+      "type": "text",
+      "id": "text",
+      "place": {
+        "anchor": "l",
+        "origin": "l",
+        "dx": {
+          "u": "mm",
+          "v": 3
+        },
+        "dy": 0,
+        "size": {
+          "e": {
+            "t": "call",
+            "callee": "min",
+            "args": [
+              {
+                "t": "binary",
+                "op": "*",
+                "left": {
+                  "t": "ident",
+                  "name": "H"
+                },
+                "right": {
+                  "t": "num",
+                  "v": 0.6
+                }
+              },
+              {
+                "t": "binary",
+                "op": "*",
+                "left": {
+                  "t": "num",
+                  "v": 8
+                },
+                "right": {
+                  "t": "ident",
+                  "name": "mm"
+                }
+              }
+            ]
+          },
+          "src": "min(H * 0.6, 8 * mm)"
+        },
+        "h": {
+          "u": "%",
+          "v": 92,
+          "of": "h"
+        },
+        "min": {
+          "size": 6
+        }
+      },
+      "text": {
+        "parts": [
+          {
+            "e": {
+              "t": "ident",
+              "name": "text"
+            }
+          }
+        ]
+      },
+      "font": "bitmap",
+      "bitmapFont": "fixed",
+      "fontFamily": "sans-serif",
+      "bold": false,
+      "italic": false,
+      "underline": false,
+      "align": "left",
+      "autofit": true,
+      "valign": "middle"
+    }
+  ],
+  "adaptivity": {
+    "designedFor": {
+      "tapeWidthMm": 12,
+      "labelLengthMm": 40
+    },
+    "minTapeWidthMm": 6,
+    "maxTapeWidthMm": 24,
+    "autoLength": true,
+    "autoLengthPadMm": 3
+  },
+  "threshold": 128
+}

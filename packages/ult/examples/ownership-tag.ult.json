@@ -1,0 +1,254 @@
+{
+  "version": 1,
+  "kind": "label-template",
+  "id": "example-ownership-tag",
+  "name": "Ownership tag",
+  "author": "ULT contributors",
+  "description": "For tools and gear that leave the house: a small \"Property of\", the name large, and a way to reach you.",
+  "license": "CC0-1.0",
+  "tags": [
+    "tools",
+    "home",
+    "contact"
+  ],
+  "revision": 1,
+  "params": [
+    {
+      "name": "prefix",
+      "label": "Heading",
+      "type": "text",
+      "default": "Property of"
+    },
+    {
+      "name": "owner",
+      "label": "Name",
+      "type": "text",
+      "default": "Alex Smith"
+    },
+    {
+      "name": "contact",
+      "label": "Phone or email",
+      "type": "text",
+      "default": "512-555-0100"
+    }
+  ],
+  "elements": [
+    {
+      "type": "text",
+      "id": "prefix",
+      "place": {
+        "anchor": "tl",
+        "origin": "tl",
+        "dx": {
+          "u": "mm",
+          "v": 2
+        },
+        "dy": {
+          "u": "%",
+          "v": 4,
+          "of": "h"
+        },
+        "size": {
+          "e": {
+            "t": "call",
+            "callee": "min",
+            "args": [
+              {
+                "t": "binary",
+                "op": "*",
+                "left": {
+                  "t": "ident",
+                  "name": "H"
+                },
+                "right": {
+                  "t": "num",
+                  "v": 0.2
+                }
+              },
+              {
+                "t": "binary",
+                "op": "*",
+                "left": {
+                  "t": "num",
+                  "v": 2.5
+                },
+                "right": {
+                  "t": "ident",
+                  "name": "mm"
+                }
+              }
+            ]
+          },
+          "src": "min(H * 0.2, 2.5 * mm)"
+        },
+        "min": {
+          "size": 5
+        }
+      },
+      "text": {
+        "parts": [
+          {
+            "e": {
+              "t": "ident",
+              "name": "prefix"
+            }
+          }
+        ]
+      },
+      "font": "bitmap",
+      "bitmapFont": "fixed",
+      "fontFamily": "sans-serif",
+      "bold": false,
+      "italic": false,
+      "underline": false,
+      "align": "left"
+    },
+    {
+      "type": "text",
+      "id": "owner",
+      "place": {
+        "relTo": "prefix",
+        "anchor": "bl",
+        "origin": "tl",
+        "dx": 0,
+        "dy": {
+          "u": "%",
+          "v": 3,
+          "of": "h"
+        },
+        "size": {
+          "e": {
+            "t": "call",
+            "callee": "min",
+            "args": [
+              {
+                "t": "binary",
+                "op": "*",
+                "left": {
+                  "t": "ident",
+                  "name": "H"
+                },
+                "right": {
+                  "t": "num",
+                  "v": 0.38
+                }
+              },
+              {
+                "t": "binary",
+                "op": "*",
+                "left": {
+                  "t": "num",
+                  "v": 4.5
+                },
+                "right": {
+                  "t": "ident",
+                  "name": "mm"
+                }
+              }
+            ]
+          },
+          "src": "min(H * 0.38, 4.5 * mm)"
+        },
+        "min": {
+          "size": 6
+        }
+      },
+      "text": {
+        "parts": [
+          {
+            "e": {
+              "t": "ident",
+              "name": "owner"
+            }
+          }
+        ]
+      },
+      "font": "bitmap",
+      "bitmapFont": "fixed",
+      "fontFamily": "sans-serif",
+      "bold": true,
+      "italic": false,
+      "underline": false,
+      "align": "left"
+    },
+    {
+      "type": "text",
+      "id": "contact",
+      "place": {
+        "relTo": "owner",
+        "anchor": "bl",
+        "origin": "tl",
+        "dx": 0,
+        "dy": {
+          "u": "%",
+          "v": 3,
+          "of": "h"
+        },
+        "size": {
+          "e": {
+            "t": "call",
+            "callee": "min",
+            "args": [
+              {
+                "t": "binary",
+                "op": "*",
+                "left": {
+                  "t": "ident",
+                  "name": "H"
+                },
+                "right": {
+                  "t": "num",
+                  "v": 0.2
+                }
+              },
+              {
+                "t": "binary",
+                "op": "*",
+                "left": {
+                  "t": "num",
+                  "v": 2.5
+                },
+                "right": {
+                  "t": "ident",
+                  "name": "mm"
+                }
+              }
+            ]
+          },
+          "src": "min(H * 0.2, 2.5 * mm)"
+        },
+        "min": {
+          "size": 5
+        }
+      },
+      "text": {
+        "parts": [
+          {
+            "e": {
+              "t": "ident",
+              "name": "contact"
+            }
+          }
+        ]
+      },
+      "font": "bitmap",
+      "bitmapFont": "fixed",
+      "fontFamily": "sans-serif",
+      "bold": false,
+      "italic": false,
+      "underline": false,
+      "align": "left"
+    }
+  ],
+  "adaptivity": {
+    "designedFor": {
+      "tapeWidthMm": 19,
+      "labelLengthMm": 40
+    },
+    "minTapeWidthMm": 12,
+    "maxTapeWidthMm": 24,
+    "autoLength": true,
+    "autoLengthPadMm": 2
+  },
+  "threshold": 128
+}

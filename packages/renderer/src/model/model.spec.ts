@@ -125,6 +125,27 @@ describe('label library', () => {
         expect(new LabelLibrary(backend).list().map(entry => entry.template.id)).toEqual([starters[1].id]);
     });
 
+    it('adds starters from a later release without restoring deleted ones', () => {
+        const backend = memBackend();
+        const first = [createTemplate('one', 12, 40), createTemplate('two', 12, 40)];
+        new LabelLibrary(backend).installDefaults(first);
+        new LabelLibrary(backend).remove(first[0].id);
+
+        const later = [...first, createTemplate('three', 12, 40)];
+        new LabelLibrary(backend).installDefaults(later);
+        expect(new LabelLibrary(backend).list().map(entry => entry.template.id).sort())
+            .toEqual([first[1].id, later[2].id].sort());
+    });
+
+    it('treats an install with only the old flag as having seen the original starters', () => {
+        const backend = memBackend();
+        backend.setItem('blewebler2.labels.starters.v1', '1');
+        const original = { ...createTemplate('asset', 12, 40), id: 'example-asset-tag' };
+        const added = createTemplate('quick', 12, 40);
+        new LabelLibrary(backend).installDefaults([original, added]);
+        expect(new LabelLibrary(backend).list().map(entry => entry.template.id)).toEqual([added.id]);
+    });
+
     it('does not overwrite an existing label when installing starters', () => {
         const backend = memBackend();
         const original = createTemplate('starter', 12, 40);

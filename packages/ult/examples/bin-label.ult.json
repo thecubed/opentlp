@@ -1,0 +1,321 @@
+{
+  "version": 1,
+  "kind": "label-template",
+  "id": "example-bin-label",
+  "name": "Bin label",
+  "author": "ULT contributors",
+  "description": "A big category with a smaller detail line under it, framed, at a fixed preset length so a row of bins lines up. The frame sets the label length (50, 75 or 100 mm); both lines shrink to fit inside it.",
+  "license": "CC0-1.0",
+  "tags": [
+    "storage",
+    "bins",
+    "workshop",
+    "organising"
+  ],
+  "revision": 1,
+  "params": [
+    {
+      "name": "title",
+      "label": "Category",
+      "type": "text",
+      "default": "SCREWS"
+    },
+    {
+      "name": "detail",
+      "label": "Detail",
+      "type": "text",
+      "default": "M3 × 10 mm"
+    },
+    {
+      "name": "length",
+      "label": "Label length (mm)",
+      "type": "select",
+      "default": "75",
+      "options": [
+        "50",
+        "75",
+        "100"
+      ]
+    }
+  ],
+  "elements": [
+    {
+      "type": "shape",
+      "id": "frame",
+      "shape": "rect",
+      "stroke": 2,
+      "fill": false,
+      "radius": {
+        "u": "mm",
+        "v": 1.5
+      },
+      "locked": true,
+      "place": {
+        "anchor": "l",
+        "origin": "l",
+        "dx": {
+          "u": "mm",
+          "v": 0.5
+        },
+        "dy": 0,
+        "w": {
+          "e": {
+            "t": "binary",
+            "op": "-",
+            "left": {
+              "t": "call",
+              "callee": "min",
+              "args": [
+                {
+                  "t": "ident",
+                  "name": "W"
+                },
+                {
+                  "t": "binary",
+                  "op": "*",
+                  "left": {
+                    "t": "call",
+                    "callee": "number",
+                    "args": [
+                      {
+                        "t": "ident",
+                        "name": "length"
+                      }
+                    ]
+                  },
+                  "right": {
+                    "t": "ident",
+                    "name": "mm"
+                  }
+                }
+              ]
+            },
+            "right": {
+              "t": "binary",
+              "op": "*",
+              "left": {
+                "t": "num",
+                "v": 1
+              },
+              "right": {
+                "t": "ident",
+                "name": "mm"
+              }
+            }
+          },
+          "src": "min(W, number(length) * mm) - 1 * mm"
+        },
+        "h": {
+          "e": {
+            "t": "binary",
+            "op": "-",
+            "left": {
+              "t": "ident",
+              "name": "H"
+            },
+            "right": {
+              "t": "binary",
+              "op": "*",
+              "left": {
+                "t": "num",
+                "v": 1
+              },
+              "right": {
+                "t": "ident",
+                "name": "mm"
+              }
+            }
+          },
+          "src": "H - 1 * mm"
+        }
+      }
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "place": {
+        "relTo": "frame",
+        "anchor": "t",
+        "origin": "t",
+        "dx": 0,
+        "dy": {
+          "u": "%",
+          "v": 7,
+          "of": "h"
+        },
+        "size": {
+          "u": "%",
+          "v": 46,
+          "of": "h"
+        },
+        "w": {
+          "e": {
+            "t": "binary",
+            "op": "-",
+            "left": {
+              "t": "call",
+              "callee": "min",
+              "args": [
+                {
+                  "t": "ident",
+                  "name": "W"
+                },
+                {
+                  "t": "binary",
+                  "op": "*",
+                  "left": {
+                    "t": "call",
+                    "callee": "number",
+                    "args": [
+                      {
+                        "t": "ident",
+                        "name": "length"
+                      }
+                    ]
+                  },
+                  "right": {
+                    "t": "ident",
+                    "name": "mm"
+                  }
+                }
+              ]
+            },
+            "right": {
+              "t": "binary",
+              "op": "*",
+              "left": {
+                "t": "num",
+                "v": 5
+              },
+              "right": {
+                "t": "ident",
+                "name": "mm"
+              }
+            }
+          },
+          "src": "min(W, number(length) * mm) - 5 * mm"
+        },
+        "min": {
+          "size": 6
+        }
+      },
+      "text": {
+        "parts": [
+          {
+            "e": {
+              "t": "ident",
+              "name": "title"
+            }
+          }
+        ]
+      },
+      "font": "bitmap",
+      "bitmapFont": "fixed",
+      "fontFamily": "sans-serif",
+      "bold": true,
+      "italic": false,
+      "underline": false,
+      "align": "center",
+      "autofit": true
+    },
+    {
+      "type": "text",
+      "id": "detail",
+      "place": {
+        "relTo": "frame",
+        "anchor": "b",
+        "origin": "b",
+        "dx": 0,
+        "dy": {
+          "u": "%",
+          "v": -8,
+          "of": "h"
+        },
+        "size": {
+          "u": "%",
+          "v": 22,
+          "of": "h"
+        },
+        "w": {
+          "e": {
+            "t": "binary",
+            "op": "-",
+            "left": {
+              "t": "call",
+              "callee": "min",
+              "args": [
+                {
+                  "t": "ident",
+                  "name": "W"
+                },
+                {
+                  "t": "binary",
+                  "op": "*",
+                  "left": {
+                    "t": "call",
+                    "callee": "number",
+                    "args": [
+                      {
+                        "t": "ident",
+                        "name": "length"
+                      }
+                    ]
+                  },
+                  "right": {
+                    "t": "ident",
+                    "name": "mm"
+                  }
+                }
+              ]
+            },
+            "right": {
+              "t": "binary",
+              "op": "*",
+              "left": {
+                "t": "num",
+                "v": 5
+              },
+              "right": {
+                "t": "ident",
+                "name": "mm"
+              }
+            }
+          },
+          "src": "min(W, number(length) * mm) - 5 * mm"
+        },
+        "min": {
+          "size": 5
+        }
+      },
+      "text": {
+        "parts": [
+          {
+            "e": {
+              "t": "ident",
+              "name": "detail"
+            }
+          }
+        ]
+      },
+      "font": "bitmap",
+      "bitmapFont": "fixed",
+      "fontFamily": "sans-serif",
+      "bold": false,
+      "italic": false,
+      "underline": false,
+      "align": "center",
+      "autofit": true
+    }
+  ],
+  "adaptivity": {
+    "designedFor": {
+      "tapeWidthMm": 19,
+      "labelLengthMm": 100
+    },
+    "minTapeWidthMm": 12,
+    "maxTapeWidthMm": 24,
+    "autoLength": true,
+    "autoLengthPadMm": 0.5
+  },
+  "threshold": 128
+}

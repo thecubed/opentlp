@@ -1,0 +1,180 @@
+{
+  "version": 1,
+  "kind": "label-template",
+  "id": "example-breaker-label",
+  "name": "Breaker label",
+  "author": "ULT contributors",
+  "description": "Circuit number knocked out of a solid block, then what it feeds. In a batch, \"1, 2, 3\" on the Circuit column numbers a whole panel.",
+  "license": "CC0-1.0",
+  "tags": [
+    "electrical",
+    "home",
+    "panel"
+  ],
+  "revision": 1,
+  "params": [
+    {
+      "name": "circuit",
+      "label": "Circuit",
+      "type": "number",
+      "default": 12,
+      "min": 1,
+      "max": 999,
+      "step": 1
+    },
+    {
+      "name": "feeds",
+      "label": "Feeds",
+      "type": "text",
+      "default": "Kitchen"
+    }
+  ],
+  "elements": [
+    {
+      "type": "text",
+      "id": "num",
+      "place": {
+        "anchor": "l",
+        "origin": "l",
+        "dx": {
+          "u": "mm",
+          "v": 2
+        },
+        "dy": 0,
+        "size": {
+          "e": {
+            "t": "call",
+            "callee": "min",
+            "args": [
+              {
+                "t": "binary",
+                "op": "*",
+                "left": {
+                  "t": "ident",
+                  "name": "H"
+                },
+                "right": {
+                  "t": "num",
+                  "v": 0.55
+                }
+              },
+              {
+                "t": "binary",
+                "op": "*",
+                "left": {
+                  "t": "num",
+                  "v": 6
+                },
+                "right": {
+                  "t": "ident",
+                  "name": "mm"
+                }
+              }
+            ]
+          },
+          "src": "min(H * 0.55, 6 * mm)"
+        },
+        "min": {
+          "size": 6
+        }
+      },
+      "text": {
+        "parts": [
+          {
+            "e": {
+              "t": "ident",
+              "name": "circuit"
+            }
+          }
+        ]
+      },
+      "font": "bitmap",
+      "bitmapFont": "fixed",
+      "fontFamily": "sans-serif",
+      "bold": true,
+      "italic": false,
+      "underline": false,
+      "align": "center",
+      "invert": true,
+      "invertPad": 4
+    },
+    {
+      "type": "text",
+      "id": "feeds",
+      "place": {
+        "relTo": "num",
+        "anchor": "r",
+        "origin": "l",
+        "dx": {
+          "u": "mm",
+          "v": 2.5
+        },
+        "dy": 0,
+        "size": {
+          "e": {
+            "t": "call",
+            "callee": "min",
+            "args": [
+              {
+                "t": "binary",
+                "op": "*",
+                "left": {
+                  "t": "ident",
+                  "name": "H"
+                },
+                "right": {
+                  "t": "num",
+                  "v": 0.4
+                }
+              },
+              {
+                "t": "binary",
+                "op": "*",
+                "left": {
+                  "t": "num",
+                  "v": 3.5
+                },
+                "right": {
+                  "t": "ident",
+                  "name": "mm"
+                }
+              }
+            ]
+          },
+          "src": "min(H * 0.4, 3.5 * mm)"
+        },
+        "min": {
+          "size": 6
+        }
+      },
+      "text": {
+        "parts": [
+          {
+            "e": {
+              "t": "ident",
+              "name": "feeds"
+            }
+          }
+        ]
+      },
+      "font": "bitmap",
+      "bitmapFont": "fixed",
+      "fontFamily": "sans-serif",
+      "bold": false,
+      "italic": false,
+      "underline": false,
+      "align": "left"
+    }
+  ],
+  "adaptivity": {
+    "designedFor": {
+      "tapeWidthMm": 12,
+      "labelLengthMm": 40
+    },
+    "minTapeWidthMm": 9,
+    "maxTapeWidthMm": 24,
+    "autoLength": true,
+    "autoLengthPadMm": 2
+  },
+  "threshold": 128
+}

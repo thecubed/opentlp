@@ -1,0 +1,178 @@
+{
+  "version": 1,
+  "kind": "label-template",
+  "id": "example-qr-compact",
+  "name": "QR + text (compact)",
+  "author": "ULT contributors",
+  "description": "A small QR code with a few words beside it, for narrow tape: link a device to its manual or a dashboard. Keep the link short — fewer modules scan better at this size.",
+  "license": "CC0-1.0",
+  "tags": [
+    "qr",
+    "link",
+    "home",
+    "manual"
+  ],
+  "revision": 1,
+  "params": [
+    {
+      "name": "url",
+      "label": "Link",
+      "type": "text",
+      "default": "https://example.com/m"
+    },
+    {
+      "name": "caption",
+      "label": "Text",
+      "type": "text",
+      "default": "Manual"
+    }
+  ],
+  "elements": [
+    {
+      "type": "qr",
+      "id": "qr",
+      "data": {
+        "parts": [
+          {
+            "e": {
+              "t": "ident",
+              "name": "url"
+            }
+          }
+        ]
+      },
+      "ecLevel": "L",
+      "place": {
+        "anchor": "l",
+        "origin": "l",
+        "dx": {
+          "u": "mm",
+          "v": 1
+        },
+        "dy": 0,
+        "size": {
+          "e": {
+            "t": "call",
+            "callee": "min",
+            "args": [
+              {
+                "t": "binary",
+                "op": "-",
+                "left": {
+                  "t": "ident",
+                  "name": "H"
+                },
+                "right": {
+                  "t": "binary",
+                  "op": "*",
+                  "left": {
+                    "t": "num",
+                    "v": 0.5
+                  },
+                  "right": {
+                    "t": "ident",
+                    "name": "mm"
+                  }
+                }
+              },
+              {
+                "t": "binary",
+                "op": "*",
+                "left": {
+                  "t": "num",
+                  "v": 12
+                },
+                "right": {
+                  "t": "ident",
+                  "name": "mm"
+                }
+              }
+            ]
+          },
+          "src": "min(H - 0.5 * mm, 12 * mm)"
+        },
+        "min": {
+          "size": 20
+        }
+      }
+    },
+    {
+      "type": "text",
+      "id": "caption",
+      "place": {
+        "relTo": "qr",
+        "anchor": "r",
+        "origin": "l",
+        "dx": {
+          "u": "mm",
+          "v": 1.5
+        },
+        "dy": 0,
+        "size": {
+          "e": {
+            "t": "call",
+            "callee": "min",
+            "args": [
+              {
+                "t": "binary",
+                "op": "*",
+                "left": {
+                  "t": "ident",
+                  "name": "H"
+                },
+                "right": {
+                  "t": "num",
+                  "v": 0.4
+                }
+              },
+              {
+                "t": "binary",
+                "op": "*",
+                "left": {
+                  "t": "num",
+                  "v": 4
+                },
+                "right": {
+                  "t": "ident",
+                  "name": "mm"
+                }
+              }
+            ]
+          },
+          "src": "min(H * 0.4, 4 * mm)"
+        },
+        "min": {
+          "size": 6
+        }
+      },
+      "text": {
+        "parts": [
+          {
+            "e": {
+              "t": "ident",
+              "name": "caption"
+            }
+          }
+        ]
+      },
+      "font": "bitmap",
+      "bitmapFont": "fixed",
+      "fontFamily": "sans-serif",
+      "bold": true,
+      "italic": false,
+      "underline": false,
+      "align": "left"
+    }
+  ],
+  "adaptivity": {
+    "designedFor": {
+      "tapeWidthMm": 12,
+      "labelLengthMm": 30
+    },
+    "minTapeWidthMm": 9,
+    "maxTapeWidthMm": 24,
+    "autoLength": true,
+    "autoLengthPadMm": 2
+  },
+  "threshold": 128
+}

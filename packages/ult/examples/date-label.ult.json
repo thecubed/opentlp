@@ -1,0 +1,181 @@
+{
+  "version": 1,
+  "kind": "label-template",
+  "id": "example-date-label",
+  "name": "Date label",
+  "author": "ULT contributors",
+  "description": "What happened, and when: \"Opened\", \"Changed\", \"Use by\" over a date. For food, chemicals, filters and batteries.",
+  "license": "CC0-1.0",
+  "tags": [
+    "kitchen",
+    "home",
+    "date",
+    "maintenance"
+  ],
+  "revision": 1,
+  "params": [
+    {
+      "name": "what",
+      "label": "Label",
+      "type": "text",
+      "default": "Opened"
+    },
+    {
+      "name": "date",
+      "label": "Date",
+      "type": "date",
+      "default": "2026-01-01"
+    }
+  ],
+  "elements": [
+    {
+      "type": "text",
+      "id": "what",
+      "place": {
+        "anchor": "tl",
+        "origin": "tl",
+        "dx": {
+          "u": "mm",
+          "v": 2
+        },
+        "dy": {
+          "u": "%",
+          "v": 6,
+          "of": "h"
+        },
+        "size": {
+          "e": {
+            "t": "call",
+            "callee": "min",
+            "args": [
+              {
+                "t": "binary",
+                "op": "*",
+                "left": {
+                  "t": "ident",
+                  "name": "H"
+                },
+                "right": {
+                  "t": "num",
+                  "v": 0.3
+                }
+              },
+              {
+                "t": "binary",
+                "op": "*",
+                "left": {
+                  "t": "num",
+                  "v": 3
+                },
+                "right": {
+                  "t": "ident",
+                  "name": "mm"
+                }
+              }
+            ]
+          },
+          "src": "min(H * 0.3, 3 * mm)"
+        },
+        "min": {
+          "size": 5
+        }
+      },
+      "text": {
+        "parts": [
+          {
+            "e": {
+              "t": "ident",
+              "name": "what"
+            }
+          }
+        ]
+      },
+      "font": "bitmap",
+      "bitmapFont": "fixed",
+      "fontFamily": "sans-serif",
+      "bold": false,
+      "italic": false,
+      "underline": false,
+      "align": "left"
+    },
+    {
+      "type": "text",
+      "id": "date",
+      "place": {
+        "relTo": "what",
+        "anchor": "bl",
+        "origin": "tl",
+        "dx": 0,
+        "dy": {
+          "u": "%",
+          "v": 5,
+          "of": "h"
+        },
+        "size": {
+          "e": {
+            "t": "call",
+            "callee": "min",
+            "args": [
+              {
+                "t": "binary",
+                "op": "*",
+                "left": {
+                  "t": "ident",
+                  "name": "H"
+                },
+                "right": {
+                  "t": "num",
+                  "v": 0.45
+                }
+              },
+              {
+                "t": "binary",
+                "op": "*",
+                "left": {
+                  "t": "num",
+                  "v": 4.5
+                },
+                "right": {
+                  "t": "ident",
+                  "name": "mm"
+                }
+              }
+            ]
+          },
+          "src": "min(H * 0.45, 4.5 * mm)"
+        },
+        "min": {
+          "size": 6
+        }
+      },
+      "text": {
+        "parts": [
+          {
+            "e": {
+              "t": "ident",
+              "name": "date"
+            }
+          }
+        ]
+      },
+      "font": "bitmap",
+      "bitmapFont": "fixed",
+      "fontFamily": "sans-serif",
+      "bold": true,
+      "italic": false,
+      "underline": false,
+      "align": "left"
+    }
+  ],
+  "adaptivity": {
+    "designedFor": {
+      "tapeWidthMm": 12,
+      "labelLengthMm": 40
+    },
+    "minTapeWidthMm": 9,
+    "maxTapeWidthMm": 24,
+    "autoLength": true,
+    "autoLengthPadMm": 2
+  },
+  "threshold": 128
+}
